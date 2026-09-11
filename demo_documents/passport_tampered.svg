@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="800" height="520" style="background:#18181b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <rect x="20" y="20" width="760" height="480" rx="20" fill="#27272a" stroke="#ef4444" stroke-width="3" stroke-dasharray="6 6"/>
+
+  <text x="400" y="260" text-anchor="middle" font-size="34" font-weight="900" fill="#ef4444" opacity="0.35" transform="rotate(-20 400 260)" letter-spacing="4">
+    TAMPERED SPECIMEN • PHOTO REPLACED
+  </text>
+
+  <rect x="20" y="20" width="760" height="70" rx="20" fill="#450a0a"/>
+  <text x="50" y="62" font-size="22" font-weight="800" fill="#f87171" letter-spacing="2">PASSPORT (TAMPERED)</text>
+
+  <!-- Photo Box with visible pasted border artifacts -->
+  <rect x="46" y="106" width="168" height="218" rx="4" fill="none" stroke="#ef4444" stroke-width="3"/>
+  <rect x="50" y="110" width="160" height="210" rx="4" fill="#3f3f46"/>
+  <circle cx="130" cy="180" r="45" fill="#a1a1aa"/>
+  <path d="M 80 290 Q 130 230 180 290 Z" fill="#71717a"/>
+  <text x="130" y="315" text-anchor="middle" font-size="10" font-weight="900" fill="#ef4444">PASTED PHOTO CUTOUT</text>
+
+  <text x="240" y="125" font-size="10" font-weight="700" fill="#a1a1aa">PASSPORT NO.</text>
+  <text x="240" y="145" font-size="16" font-weight="900" fill="#f87171" font-family="monospace">TESTP99991</text>
+
+  <text x="240" y="185" font-size="10" font-weight="700" fill="#a1a1aa">NAME / NOM</text>
+  <text x="240" y="205" font-size="16" font-weight="800" fill="#ffffff">TAMPERED PASSPORT</text>
+
+  <!-- Corrupted / Mismatched MRZ with invalid check digits -->
+  <rect x="40" y="370" width="720" height="110" rx="10" fill="#09090b" stroke="#7f1d1d" stroke-width="2"/>
+  <text x="60" y="415" font-size="17" font-weight="700" fill="#fca5a5" font-family="'OCR-B', 'Courier New', monospace" letter-spacing="4">
+    P&lt;INDTAMPERED&lt;&lt;PASSPORT&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+  </text>
+  <text x="60" y="455" font-size="17" font-weight="700" fill="#ef4444" font-family="'OCR-B', 'Courier New', monospace" letter-spacing="4">
+    TESTP99991IND9203120M2903119&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;99
+  </text>
+</svg>

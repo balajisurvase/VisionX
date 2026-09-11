@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="800" height="520" style="background:#0B1220; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <rect x="20" y="20" width="760" height="480" rx="16" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+  
+  <!-- Header Bar -->
+  <rect x="20" y="20" width="760" height="70" rx="16" fill="#0f1f38"/>
+  <text x="50" y="62" font-size="20" font-weight="800" fill="#ffffff" letter-spacing="2">PASSPORT / PASSEPORT</text>
+  <text x="500" y="60" font-size="14" font-weight="700" fill="#93c5fd" letter-spacing="1">UNITED STATES OF AMERICA</text>
+
+  <!-- Watermark -->
+  <text x="400" y="260" text-anchor="middle" font-size="30" font-weight="900" fill="#ef4444" opacity="0.15" transform="rotate(-15 400 260)" letter-spacing="4">
+    EXPIRED SPECIMEN • 2018-02-05
+  </text>
+
+  <!-- Photo Box -->
+  <rect x="50" y="110" width="160" height="210" rx="8" fill="#f1f5f9" stroke="#0f1f38" stroke-width="2"/>
+  <circle cx="130" cy="180" r="45" fill="#fed7aa"/>
+  <path d="M 80 290 Q 130 220 180 290 Z" fill="#3b82f6"/>
+  <text x="130" y="310" text-anchor="middle" font-size="11" font-weight="700" fill="#1e293b">MICHELLE DE LA PAZ</text>
+
+  <!-- Details -->
+  <text x="240" y="130" font-size="10" font-weight="700" fill="#64748b">SURNAME / NOM</text>
+  <text x="240" y="150" font-size="16" font-weight="800" fill="#0f172a">DE LA PAZ</text>
+
+  <text x="240" y="185" font-size="10" font-weight="700" fill="#64748b">GIVEN NAMES / PRÉNOMS</text>
+  <text x="240" y="205" font-size="16" font-weight="800" fill="#0f172a">MICHELLE</text>
+
+  <text x="500" y="130" font-size="10" font-weight="700" fill="#64748b">PASSPORT NO. / N° DU PASSEPORT</text>
+  <text x="500" y="150" font-size="16" font-weight="900" fill="#0f172a" font-family="monospace">910239248</text>
+
+  <text x="240" y="240" font-size="10" font-weight="700" fill="#64748b">NATIONALITY / NATIONALITÉ</text>
+  <text x="240" y="260" font-size="14" font-weight="700" fill="#0f172a">UNITED STATES OF AMERICA</text>
+
+  <text x="500" y="185" font-size="10" font-weight="700" fill="#64748b">DATE OF BIRTH / SEX</text>
+  <text x="500" y="205" font-size="14" font-weight="800" fill="#0f172a">07 AUG 1999 • F</text>
+
+  <text x="500" y="240" font-size="10" font-weight="700" fill="#dc2626">DATE OF EXPIRY (EXPIRED)</text>
+  <text x="500" y="260" font-size="16" font-weight="900" fill="#dc2626" font-family="monospace">05 FEB 2018</text>
+
+  <!-- MRZ Zone -->
+  <rect x="40" y="360" width="720" height="120" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="60" y="410" font-size="16" font-weight="700" fill="#0f172a" font-family="'OCR-B', 'Courier New', monospace" letter-spacing="4">
+    P&lt;USADELAPAZ&lt;&lt;MICHELLE&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+  </text>
+  <text x="60" y="450" font-size="16" font-weight="700" fill="#0f172a" font-family="'OCR-B', 'Courier New', monospace" letter-spacing="4">
+    9102392482USA9908071F1802051900781200&lt;129676
+  </text>
+</svg>

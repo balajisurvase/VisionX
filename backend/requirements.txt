@@ -1,0 +1,32 @@
+# ==============================================================================
+# SIH 2026 Problem Statement 26188: AI-Based Fake Identity & Document Screening
+# Organization: Sashastra Seema Bal (SSB), Ministry of Home Affairs
+# Python Backend Dependencies Specification
+# ==============================================================================
+
+# Core API Framework & ASGI Server
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.28.0,<1.0.0
+python-multipart>=0.0.9,<1.0.0
+pydantic>=2.6.0,<3.0.0
+
+# Database & Supabase Integration
+supabase>=2.3.0,<3.0.0
+postgrest>=0.16.0,<1.0.0
+
+# Google GenAI SDK (Multimodal Vision OCR, Forensics, Biometrics)
+google-genai>=0.1.0
+
+# Computer Vision & Forensic Image Processing (Module 3 & 4)
+opencv-python-headless>=4.9.0.80
+pillow>=10.2.0
+numpy>=1.24.0
+
+# Security, Hashing & Authentication
+pyjwt>=2.8.0
+bcrypt>=4.1.2
+cryptography>=42.0.0
+
+# Environment & Utilities
+python-dotenv>=1.0.1
+requests>=2.31.0

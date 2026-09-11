@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="800" height="520" style="background:#1e1014; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <rect x="20" y="20" width="760" height="480" rx="20" fill="#291219" stroke="#991b1b" stroke-width="2"/>
+  
+  <!-- Watermark -->
+  <text x="400" y="260" text-anchor="middle" font-size="32" font-weight="900" fill="#f87171" opacity="0.25" transform="rotate(-20 400 260)" letter-spacing="4">
+    EXPIRED DOCUMENT • SPECIMEN ONLY
+  </text>
+
+  <rect x="20" y="20" width="760" height="70" rx="20" fill="#881337"/>
+  <text x="50" y="62" font-size="22" font-weight="800" fill="#ffffff" letter-spacing="2">PASSPORT / PASSEPORT</text>
+  <text x="500" y="60" font-size="14" font-weight="700" fill="#fecdd3" letter-spacing="1">REPUBLIC OF INDIA</text>
+
+  <!-- Photo Box -->
+  <rect x="50" y="110" width="160" height="210" rx="10" fill="#3f1d24" stroke="#9f1239" stroke-width="2"/>
+  <circle cx="130" cy="180" r="45" fill="#fca5a5"/>
+  <path d="M 80 290 Q 130 230 180 290 Z" fill="#e11d48"/>
+  <text x="130" y="310" text-anchor="middle" font-size="10" font-weight="700" fill="#fda4af">ADITYA JADHAV (DEMO)</text>
+
+  <text x="240" y="125" font-size="10" font-weight="700" fill="#fda4af">PASSPORT NO.</text>
+  <text x="240" y="145" font-size="16" font-weight="900" fill="#f43f5e" font-family="monospace">TESTP00567</text>
+
+  <text x="240" y="185" font-size="10" font-weight="700" fill="#fda4af">NAME / NOM</text>
+  <text x="240" y="205" font-size="16" font-weight="800" fill="#ffffff">ADITYA JADHAV</text>
+
+  <text x="240" y="245" font-size="10" font-weight="700" fill="#fda4af">NATIONALITY</text>
+  <text x="240" y="265" font-size="14" font-weight="700" fill="#ffffff">INDIAN</text>
+
+  <text x="480" y="245" font-size="10" font-weight="700" fill="#fca5a5">DATE OF EXPIRY</text>
+  <text x="480" y="265" font-size="16" font-weight="900" fill="#f87171" font-family="monospace">15-05-2024 (EXPIRED)</text>
+
+  <!-- MRZ Zone -->
+  <rect x="40" y="370" width="720" height="110" rx="10" fill="#18080c" stroke="#4c0519" stroke-width="1.5"/>
+  <text x="60" y="415" font-size="17" font-weight="700" fill="#fecdd3" font-family="'OCR-B', 'Courier New', monospace" letter-spacing="4">
+    P&lt;INDJADHAV&lt;&lt;ADITYA&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;
+  </text>
+  <text x="60" y="455" font-size="17" font-weight="700" fill="#fecdd3" font-family="'OCR-B', 'Courier New', monospace" letter-spacing="4">
+    TESTP00567IND9702288M2405156&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;06
+  </text>
+</svg>

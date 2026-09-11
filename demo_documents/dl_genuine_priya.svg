@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500" style="background:#064e3b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <rect x="20" y="20" width="760" height="460" rx="16" fill="#022c22" stroke="#059669" stroke-width="2"/>
+  
+  <text x="400" y="250" text-anchor="middle" font-size="32" font-weight="900" fill="#34d399" opacity="0.2" transform="rotate(-15 400 250)" letter-spacing="4">
+    DEMO • INDIAN DRIVING LICENCE
+  </text>
+
+  <rect x="20" y="20" width="760" height="65" rx="16" fill="#047857"/>
+  <text x="40" y="58" font-size="20" font-weight="800" fill="#ffffff" letter-spacing="2">UNION OF INDIA • DRIVING LICENCE</text>
+  <text x="560" y="56" font-size="12" font-weight="700" fill="#a7f3d0">MAHARASHTRA STATE</text>
+
+  <rect x="50" y="110" width="150" height="190" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+  <circle cx="125" cy="175" r="40" fill="#a7f3d0"/>
+  <path d="M 80 270 Q 125 220 170 270 Z" fill="#34d399"/>
+  <text x="125" y="290" text-anchor="middle" font-size="9" font-weight="800" fill="#022c22">PRIYA PATIL</text>
+
+  <text x="230" y="125" font-size="10" font-weight="700" fill="#6ee7b7">DL NUMBER</text>
+  <text x="230" y="145" font-size="16" font-weight="900" fill="#34d399" font-family="monospace">TESTDL00234</text>
+
+  <text x="230" y="180" font-size="10" font-weight="700" fill="#6ee7b7">HOLDER NAME</text>
+  <text x="230" y="200" font-size="16" font-weight="800" fill="#ffffff">PRIYA PATIL</text>
+
+  <text x="230" y="235" font-size="10" font-weight="700" fill="#6ee7b7">DATE OF BIRTH</text>
+  <text x="230" y="255" font-size="14" font-weight="700" fill="#ffffff" font-family="monospace">22-08-2000</text>
+
+  <text x="450" y="235" font-size="10" font-weight="700" fill="#6ee7b7">VALID TILL</text>
+  <text x="450" y="255" font-size="15" font-weight="800" fill="#34d399" font-family="monospace">21-08-2030 (VALID)</text>
+
+  <text x="230" y="290" font-size="10" font-weight="700" fill="#6ee7b7">VEHICLE CLASS</text>
+  <text x="230" y="310" font-size="14" font-weight="700" fill="#ffffff">LMV, MCWG (NON-TRANSPORT)</text>
+
+  <rect x="40" y="360" width="720" height="90" rx="8" fill="#021e17" stroke="#065f46" stroke-width="1"/>
+  <text x="60" y="405" font-size="14" font-weight="700" fill="#a7f3d0" font-family="monospace">
+    RTO PUNE • AUTHORIZED BY GOVERNMENT OF MAHARASHTRA • SARATHI PORTAL
+  </text>
+  <text x="60" y="430" font-size="11" font-weight="600" fill="#6ee7b7">
+    CHIP-ENABLED SMART CARD SECURITY SPECIMEN FOR SIH 2026 SCREENING
+  </text>
+</svg>

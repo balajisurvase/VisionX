@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" style="background:#1c1917; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <rect width="400" height="400" fill="#292524"/>
+  <circle cx="200" cy="160" r="75" fill="#d6d3d1"/>
+  <circle cx="170" cy="155" r="7" fill="#1c1917"/>
+  <circle cx="230" cy="155" r="7" fill="#1c1917"/>
+  <path d="M 175 200 Q 200 185 225 200" stroke="#1c1917" stroke-width="4" fill="none"/>
+  <path d="M 100 340 Q 200 240 300 340 Z" fill="#ef4444"/>
+  <rect x="20" y="340" width="360" height="40" rx="8" fill="#1c1917"/>
+  <text x="200" y="365" text-anchor="middle" font-size="12" font-weight="800" fill="#f87171" letter-spacing="1">
+    IMPOSTER / UNRELATED FACE (DEMO)
+  </text>
+</svg>
