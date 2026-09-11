@@ -1,6 +1,9 @@
 export interface OfficerUser {
   id: number;
+  uuid?: string;
   user_id: string;
+  username?: string;
+  email?: string;
   password_hash?: string;
   full_name: string;
   role: string;

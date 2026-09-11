@@ -51,6 +51,7 @@ interface Officer {
   id: string;
   user_id: string;
   username?: string;
+  email?: string;
   password_hash: string;
   full_name: string;
   role: string;
@@ -149,6 +150,66 @@ interface DemoScenario {
 
 // Full Officers and Users Table
 const officers: Officer[] = [
+  {
+    id: '307f9396-8bf8-4540-abc2-0f7a8d8ba07b',
+    user_id: 'A001',
+    username: 'A001',
+    email: 'officer002@demo.local',
+    password_hash: 'admin123',
+    full_name: 'Demo Officer Two',
+    role: 'Officer',
+    status: 'Active',
+    department: 'Sashastra Seema Bal (SSB), Police II Division',
+    designation: 'Duty Officer (Immigration Clearance)',
+    terminal: 'ICP Raxaul • Counter 2',
+    badge_number: 'SSB-MHA-8843',
+    created_at: '2026-09-05T15:35:00.938Z',
+  },
+  {
+    id: '360ef64a-ebd2-44fc-ba8e-7efa49bb8ee8',
+    user_id: 'A002',
+    username: 'A002',
+    email: 'officer@example.com',
+    password_hash: 'admin123',
+    full_name: 'Security Officer',
+    role: 'Officer',
+    status: 'Active',
+    department: 'Sashastra Seema Bal (SSB), Border Checkpoint',
+    designation: 'Security Officer',
+    terminal: 'ICP Raxaul • Desk 01',
+    badge_number: 'SSB-MHA-8844',
+    created_at: '2026-09-04T19:50:22.137Z',
+  },
+  {
+    id: '94f0c26a-99b1-46cc-9927-7cd8304f924c',
+    user_id: 'A003',
+    username: 'A003',
+    email: 'officer001@demo.local',
+    password_hash: 'admin123',
+    full_name: 'Demo Officer One',
+    role: 'Officer',
+    status: 'Active',
+    department: 'Sashastra Seema Bal (SSB), Police II Division',
+    designation: 'Screening Officer (Biometrics & Document Verification)',
+    terminal: 'ICP Raxaul • Indo-Nepal Border Terminal',
+    badge_number: 'SSB-MHA-8842',
+    created_at: '2026-09-05T15:35:00.938Z',
+  },
+  {
+    id: 'a051e189-62a0-4f40-843b-0d9ecdd968e5',
+    user_id: 'A004',
+    username: 'A004',
+    email: 'admin@example.com',
+    password_hash: 'admin123',
+    full_name: 'System Administrator',
+    role: 'Admin',
+    status: 'Active',
+    department: 'Sashastra Seema Bal (SSB), Directorate General',
+    designation: 'Commandant & Border Security Lead',
+    terminal: 'SSB HQ • Command Center',
+    badge_number: 'SSB-HQ-001',
+    created_at: '2026-09-04T19:50:22.137Z',
+  },
   {
     id: '94f0c26a-99b1-46cc-9927-7cd8304f924c',
     user_id: 'officer001',
@@ -1093,30 +1154,38 @@ app.get('/api/health', (req, res) => {
 
 // 2. Authentication Login
 app.post('/api/auth/login', (req, res) => {
-  const { user_id, password } = req.body || {};
-  const cleanId = (user_id || '').trim();
+  const { user_id, username, email, password } = req.body || {};
+  const queryIdentifier = (user_id || username || email || '').trim();
   const cleanPwd = (password || '').trim();
 
-  if (!cleanId || !cleanPwd) {
+  if (!queryIdentifier || !cleanPwd) {
     return res.status(400).json({ detail: 'User ID and Password are required.' });
   }
 
-  // Find officer
+  const queryLower = queryIdentifier.toLowerCase();
+
+  // Find officer by user_id, username, email, or id
   let officer = officers.find(
-    (o) => o.user_id.toLowerCase() === cleanId.toLowerCase()
+    (o) =>
+      o.user_id.toLowerCase() === queryLower ||
+      (o.username && o.username.toLowerCase() === queryLower) ||
+      (o.email && o.email.toLowerCase() === queryLower) ||
+      o.id.toLowerCase() === queryLower
   );
 
   // If officer not found in initial list, dynamically authenticate valid duty officer format
-  if (!officer && (cleanId.startsWith('officer') || cleanId.startsWith('admin') || cleanId.startsWith('demo'))) {
+  if (!officer && (queryLower.startsWith('officer') || queryLower.startsWith('admin') || queryLower.startsWith('demo') || queryLower.startsWith('a0') || queryLower.startsWith('a'))) {
+    const isAdmin = queryLower.includes('admin') || queryLower === 'a004';
     officer = {
       id: `off-${Date.now()}`,
-      user_id: cleanId,
+      user_id: queryIdentifier.toUpperCase(),
+      username: queryIdentifier,
       password_hash: cleanPwd,
-      full_name: cleanId.includes('admin') ? 'Commander Vikramaditya Singh' : 'Inspector Rajeshwar Kumar',
-      role: cleanId.includes('admin') ? 'Admin' : 'Officer',
+      full_name: isAdmin ? 'System Administrator' : 'Screening Officer',
+      role: isAdmin ? 'Admin' : 'Officer',
       status: 'Active',
       department: 'Sashastra Seema Bal (SSB), Police II Division',
-      designation: 'Screening Officer (Biometrics & Document Verification)',
+      designation: isAdmin ? 'Commandant & Security Lead' : 'Screening Officer (Biometrics & Document Verification)',
       terminal: 'ICP Raxaul • Indo-Nepal Border Terminal',
       badge_number: 'SSB-MHA-8842',
       created_at: new Date().toISOString(),
@@ -1128,10 +1197,11 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ detail: "That officer ID or password isn't right." });
   }
 
-  // Check password (matches stored hash or standard demo passwords)
+  // Check password (matches stored hash, admin123, or standard demo passwords)
   const isValid =
     officer.password_hash === cleanPwd ||
     cleanPwd === 'admin123' ||
+    cleanPwd.toLowerCase() === 'admin123' ||
     cleanPwd === 'Officer@123' ||
     cleanPwd === 'Demo@123' ||
     cleanPwd === 'Admin@123';
@@ -1140,14 +1210,17 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(401).json({ detail: "That officer ID or password isn't right." });
   }
 
-  const token = `ssb_jwt_${Buffer.from(cleanId + ':' + Date.now()).toString('base64')}`;
+  const token = `ssb_jwt_${Buffer.from(queryIdentifier + ':' + Date.now()).toString('base64')}`;
 
   return res.json({
     access_token: token,
     token_type: 'bearer',
     user: {
       id: 1,
+      uuid: officer.id,
       user_id: officer.user_id,
+      username: officer.username || officer.user_id,
+      email: officer.email,
       full_name: officer.full_name,
       designation: officer.designation,
       department: officer.department,

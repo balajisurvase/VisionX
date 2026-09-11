@@ -24,8 +24,8 @@ interface LoginProps {
 
 export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [roleMode, setRoleMode] = useState<'officer' | 'admin'>('officer');
-  const [userId, setUserId] = useState<string>('officer001');
-  const [password, setPassword] = useState<string>('Officer@123');
+  const [userId, setUserId] = useState<string>('A001');
+  const [password, setPassword] = useState<string>('admin123');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [useLiveCamera, setUseLiveCamera] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -40,11 +40,11 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setRoleMode(role);
     setErrorMessage(null);
     if (role === 'officer') {
-      setUserId('officer001');
-      setPassword('Officer@123');
+      setUserId('A001');
+      setPassword('admin123');
     } else {
-      setUserId('admin01');
-      setPassword('Admin@123');
+      setUserId('A004');
+      setPassword('admin123');
     }
   };
 
@@ -248,7 +248,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                       id="input-user-id"
                       value={userId}
                       onChange={(e) => setUserId(e.target.value)}
-                      placeholder="e.g. officer001"
+                      placeholder="e.g. A001, A002, A003, A004"
                       required
                       className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-[#111827] placeholder-gray-400 focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
                     />
@@ -269,7 +269,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                       id="input-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
+                      placeholder="admin123"
                       required
                       className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-lg text-xs font-medium text-[#111827] placeholder-gray-400 focus:border-[#4F46E5] focus:ring-1 focus:ring-[#4F46E5] transition-colors"
                     />
@@ -325,47 +325,71 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
               {/* Quick Select Preset Credentials */}
               <div className="mt-6 pt-4 border-t border-gray-100">
-                <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-2">
-                  Demo Presets
-                </span>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">
+                    Registered Users (Pass: admin123)
+                  </span>
+                  <span className="text-[10px] text-emerald-600 font-medium">Ready</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setRoleMode('officer');
-                      setUserId('officer001');
-                      setPassword('Officer@123');
+                      setUserId('A001');
+                      setPassword('admin123');
                     }}
-                    className="p-2 text-left rounded-lg bg-[#F5F6F8] hover:bg-gray-200 border border-gray-200 text-xs transition-colors cursor-pointer"
+                    className={`p-2 text-left rounded-lg border text-xs transition-colors cursor-pointer ${
+                      userId === 'A001' ? 'bg-[#EEF2FF] border-[#4F46E5]' : 'bg-[#F5F6F8] hover:bg-gray-200 border-gray-200'
+                    }`}
                   >
-                    <div className="font-bold text-[#111827]">Officer 01</div>
-                    <div className="text-[10px] text-gray-500 font-mono">officer001</div>
+                    <div className="font-bold text-[#111827] truncate">Officer Two</div>
+                    <div className="text-[10px] text-[#4F46E5] font-mono font-bold">A001</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoleMode('officer');
+                      setUserId('A002');
+                      setPassword('admin123');
+                    }}
+                    className={`p-2 text-left rounded-lg border text-xs transition-colors cursor-pointer ${
+                      userId === 'A002' ? 'bg-[#EEF2FF] border-[#4F46E5]' : 'bg-[#F5F6F8] hover:bg-gray-200 border-gray-200'
+                    }`}
+                  >
+                    <div className="font-bold text-[#111827] truncate">Security Off.</div>
+                    <div className="text-[10px] text-[#4F46E5] font-mono font-bold">A002</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoleMode('officer');
+                      setUserId('A003');
+                      setPassword('admin123');
+                    }}
+                    className={`p-2 text-left rounded-lg border text-xs transition-colors cursor-pointer ${
+                      userId === 'A003' ? 'bg-[#EEF2FF] border-[#4F46E5]' : 'bg-[#F5F6F8] hover:bg-gray-200 border-gray-200'
+                    }`}
+                  >
+                    <div className="font-bold text-[#111827] truncate">Officer One</div>
+                    <div className="text-[10px] text-[#4F46E5] font-mono font-bold">A003</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => {
                       setRoleMode('admin');
-                      setUserId('admin01');
-                      setPassword('Admin@123');
+                      setUserId('A004');
+                      setPassword('admin123');
                     }}
-                    className="p-2 text-left rounded-lg bg-[#F5F6F8] hover:bg-gray-200 border border-gray-200 text-xs transition-colors cursor-pointer"
+                    className={`p-2 text-left rounded-lg border text-xs transition-colors cursor-pointer ${
+                      userId === 'A004' ? 'bg-[#EEF2FF] border-[#4F46E5]' : 'bg-[#F5F6F8] hover:bg-gray-200 border-gray-200'
+                    }`}
                   >
-                    <div className="font-bold text-[#111827]">Admin HQ</div>
-                    <div className="text-[10px] text-gray-500 font-mono">admin01</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRoleMode('officer');
-                      setUserId('demo_officer');
-                      setPassword('Demo@123');
-                    }}
-                    className="p-2 text-left rounded-lg bg-[#F5F6F8] hover:bg-gray-200 border border-gray-200 text-xs transition-colors cursor-pointer"
-                  >
-                    <div className="font-bold text-[#111827]">Demo Desk</div>
-                    <div className="text-[10px] text-gray-500 font-mono">demo_officer</div>
+                    <div className="font-bold text-[#111827] truncate">System Admin</div>
+                    <div className="text-[10px] text-[#4F46E5] font-mono font-bold">A004</div>
                   </button>
                 </div>
               </div>

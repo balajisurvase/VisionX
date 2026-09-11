@@ -15,6 +15,18 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- 2. OFFICERS / USERS
 -- ============================================================
 
+CREATE TABLE IF NOT EXISTS public.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(100) UNIQUE,
+    full_name VARCHAR(150) NOT NULL,
+    role VARCHAR(30) NOT NULL DEFAULT 'OFFICER',
+    email VARCHAR(150),
+    user_id VARCHAR(80) UNIQUE,
+    password TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS public.officers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 

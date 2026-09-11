@@ -33,7 +33,28 @@ interface SettingsProps {
 const SUPABASE_SCHEMA_SQL = `-- SIH 2026 Problem Statement 26188: SSB Document Screening Database
 -- Run this script in your Supabase SQL Editor
 
--- 1. Officers Table
+-- 1. Users Table
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username VARCHAR(100) UNIQUE,
+  full_name VARCHAR(150) NOT NULL,
+  role VARCHAR(30) NOT NULL DEFAULT 'OFFICER',
+  email VARCHAR(150),
+  user_id VARCHAR(80) UNIQUE,
+  password TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Seed System Users
+INSERT INTO users (id, username, full_name, role, email, user_id, password) VALUES 
+('307f9396-8bf8-4540-abc2-0f7a8d8ba07b', 'A001', 'Demo Officer Two', 'OFFICER', 'officer002@demo.local', 'A001', 'admin123'), 
+('360ef64a-ebd2-44fc-ba8e-7efa49bb8ee8', 'A002', 'Security Officer', 'OFFICER', 'officer@example.com', 'A002', 'admin123'), 
+('94f0c26a-99b1-46cc-9927-7cd8304f924c', 'A003', 'Demo Officer One', 'OFFICER', 'officer001@demo.local', 'A003', 'admin123'), 
+('a051e189-62a0-4f40-843b-0d9ecdd968e5', 'A004', 'System Administrator', 'ADMIN', 'admin@example.com', 'A004', 'admin123')
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Officers Table
 CREATE TABLE IF NOT EXISTS officers (
   id BIGSERIAL PRIMARY KEY,
   user_id VARCHAR(50) UNIQUE NOT NULL,
@@ -50,12 +71,16 @@ CREATE TABLE IF NOT EXISTS officers (
 -- Seed Default Officers
 INSERT INTO officers (user_id, password_hash, full_name, role, status)
 VALUES 
+  ('A001', 'admin123', 'Demo Officer Two', 'Officer', 'Active'),
+  ('A002', 'admin123', 'Security Officer', 'Officer', 'Active'),
+  ('A003', 'admin123', 'Demo Officer One', 'Officer', 'Active'),
+  ('A004', 'admin123', 'System Administrator', 'Admin', 'Active'),
   ('officer001', 'Officer@123', 'Inspector Rajeshwar Kumar', 'Officer', 'Active'),
   ('demo_officer', 'Demo@123', 'Demo Security Officer', 'Officer', 'Active'),
   ('admin01', 'Admin@123', 'Commander Vikramaditya Singh', 'Admin', 'Active')
 ON CONFLICT (user_id) DO NOTHING;
 
--- 2. Documents Table
+-- 3. Documents Table
 CREATE TABLE IF NOT EXISTS documents (
   id BIGSERIAL PRIMARY KEY,
   document_type VARCHAR(50) NOT NULL,

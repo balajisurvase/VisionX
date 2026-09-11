@@ -81,6 +81,9 @@ def count_officers() -> int:
     client = get_supabase_client()
     if client:
         try:
+            resp_users = client.table("users").select("id", count="exact").execute()
+            if resp_users.count is not None and resp_users.count > 0:
+                return resp_users.count
             resp = client.table("officers").select("id", count="exact").execute()
             if resp.count is not None:
                 return resp.count
@@ -93,14 +96,35 @@ def get_officer_by_user_id(user_id: str) -> Optional[Dict[str, Any]]:
     client = get_supabase_client()
     if client:
         try:
+            # 1. Query public.users table by user_id, username, or email
+            resp_users = client.table("users").select("*").or_(f"user_id.eq.{user_id},username.eq.{user_id},email.eq.{user_id}").execute()
+            if resp_users.data and len(resp_users.data) > 0:
+                u = resp_users.data[0]
+                return {
+                    "id": u.get("id"),
+                    "user_id": u.get("user_id") or u.get("username"),
+                    "username": u.get("username"),
+                    "email": u.get("email"),
+                    "full_name": u.get("full_name"),
+                    "role": (u.get("role") or "officer").lower(),
+                    "status": "active",
+                    "password_hash": u.get("password") or u.get("password_hash"),
+                }
+            # 2. Query public.officers table
             resp = client.table("officers").select("*").eq("user_id", user_id).execute()
             if resp.data and len(resp.data) > 0:
                 return resp.data[0]
         except Exception:
             pass
 
+    u_lower = user_id.lower()
     for off in _local_store["officers"]:
-        if off.get("user_id") == user_id:
+        if (
+            off.get("user_id", "").lower() == u_lower
+            or off.get("username", "").lower() == u_lower
+            or off.get("email", "").lower() == u_lower
+            or off.get("id", "").lower() == u_lower
+        ):
             return off
     
     return None
@@ -369,12 +393,73 @@ def seed_local_store_from_sql() -> int:
     pwd_hash_officer = bcrypt.hashpw(b"Officer@123", salt).decode("utf-8")
     pwd_hash_admin = bcrypt.hashpw(b"Admin@123", salt).decode("utf-8")
     pwd_hash_demo = bcrypt.hashpw(b"Demo@123", salt).decode("utf-8")
+    pwd_hash_admin123 = bcrypt.hashpw(b"admin123", salt).decode("utf-8")
     
     officer_1_id = str(uuid.uuid4())
     admin_1_id = str(uuid.uuid4())
     demo_officer_id = str(uuid.uuid4())
     
     officers = [
+        {
+            "id": "307f9396-8bf8-4540-abc2-0f7a8d8ba07b",
+            "user_id": "A001",
+            "username": "A001",
+            "email": "officer002@demo.local",
+            "password_hash": pwd_hash_admin123,
+            "full_name": "Demo Officer Two",
+            "role": "officer",
+            "status": "active",
+            "is_demo": False,
+            "department": "Sashastra Seema Bal (SSB), Police II Division",
+            "designation": "Duty Officer (Immigration Clearance)",
+            "terminal": "ICP Raxaul • Counter 2",
+            "created_at": "2026-09-05T15:35:00.938Z"
+        },
+        {
+            "id": "360ef64a-ebd2-44fc-ba8e-7efa49bb8ee8",
+            "user_id": "A002",
+            "username": "A002",
+            "email": "officer@example.com",
+            "password_hash": pwd_hash_admin123,
+            "full_name": "Security Officer",
+            "role": "officer",
+            "status": "active",
+            "is_demo": False,
+            "department": "Sashastra Seema Bal (SSB), Border Checkpoint",
+            "designation": "Security Officer",
+            "terminal": "ICP Raxaul • Desk 01",
+            "created_at": "2026-09-04T19:50:22.137Z"
+        },
+        {
+            "id": "94f0c26a-99b1-46cc-9927-7cd8304f924c",
+            "user_id": "A003",
+            "username": "A003",
+            "email": "officer001@demo.local",
+            "password_hash": pwd_hash_admin123,
+            "full_name": "Demo Officer One",
+            "role": "officer",
+            "status": "active",
+            "is_demo": False,
+            "department": "Sashastra Seema Bal (SSB), Police II Division",
+            "designation": "Screening Officer (Biometrics & Document Verification)",
+            "terminal": "ICP Raxaul • Indo-Nepal Border Terminal",
+            "created_at": "2026-09-05T15:35:00.938Z"
+        },
+        {
+            "id": "a051e189-62a0-4f40-843b-0d9ecdd968e5",
+            "user_id": "A004",
+            "username": "A004",
+            "email": "admin@example.com",
+            "password_hash": pwd_hash_admin123,
+            "full_name": "System Administrator",
+            "role": "admin",
+            "status": "active",
+            "is_demo": False,
+            "department": "Sashastra Seema Bal (SSB), Directorate General",
+            "designation": "Commandant & Border Security Lead",
+            "terminal": "SSB HQ • Command Center",
+            "created_at": "2026-09-04T19:50:22.137Z"
+        },
         {
             "id": officer_1_id,
             "user_id": "officer001",
