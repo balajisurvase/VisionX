@@ -158,8 +158,11 @@ export async function loginWithUserId(
       body: JSON.stringify({ user_id: cleanUserId, password: cleanPassword }),
     });
 
-    if (res.ok) {
-      const data = await res.json();
+    const contentType = res.headers.get('content-type') || '';
+    const text = await res.text();
+
+    if (res.ok && !text.trim().startsWith('<')) {
+      const data = JSON.parse(text);
       const token = data.access_token;
       if (token) {
         localStorage.setItem(AUTH_TOKEN_KEY, token);

@@ -1967,6 +1967,66 @@ Respond strictly in valid JSON format:
 );
 
 // -----------------------------------------------------------------------------
+// Extended API Endpoints & Aliases
+// -----------------------------------------------------------------------------
+app.get('/api/users', (req, res) => {
+  return res.json(
+    officers.map((o) => ({
+      id: o.id,
+      user_id: o.user_id,
+      username: o.username || o.user_id,
+      email: o.email,
+      full_name: o.full_name,
+      role: o.role,
+      status: o.status,
+      designation: o.designation,
+      department: o.department,
+      terminal: o.terminal,
+    }))
+  );
+});
+
+app.get('/api/officers', (req, res) => {
+  return res.json(
+    officers.map((o) => ({
+      id: o.id,
+      user_id: o.user_id,
+      username: o.username || o.user_id,
+      email: o.email,
+      full_name: o.full_name,
+      role: o.role,
+      status: o.status,
+      designation: o.designation,
+      department: o.department,
+      terminal: o.terminal,
+    }))
+  );
+});
+
+app.get('/api/auth/me', (req, res) => {
+  return res.json({
+    authenticated: true,
+    user: {
+      id: 1,
+      user_id: 'A001',
+      username: 'A001',
+      full_name: 'Demo Officer Two',
+      role: 'Officer',
+    },
+  });
+});
+
+// Explicit 404 JSON handler for ALL /api/* requests so they NEVER fall through to HTML Vite SPA
+app.all('/api/*', (req, res) => {
+  return res.status(404).json({
+    error: 'API endpoint not found',
+    method: req.method,
+    path: req.path,
+    detail: `Route ${req.method} ${req.path} is not recognized on this server.`,
+  });
+});
+
+// -----------------------------------------------------------------------------
 // Vite Middleware & Static Production Handler
 // -----------------------------------------------------------------------------
 async function startServer() {

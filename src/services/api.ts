@@ -7,6 +7,41 @@ import {
   DocumentType,
 } from '../types/verification';
 
+/**
+ * Bulletproof JSON fetch helper that strictly guards against HTML responses (<!doctype ...),
+ * gateway proxies, SPA fallback interceptors, and non-JSON payloads.
+ */
+async function fetchJson<T>(url: string, options?: RequestInit, contextDesc = 'API request'): Promise<T> {
+  const res = await fetch(url, options);
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+
+  if (!res.ok) {
+    let errorDetail = `HTTP ${res.status}`;
+    if (text && !text.trim().startsWith('<')) {
+      try {
+        const parsed = JSON.parse(text);
+        errorDetail = parsed.detail || parsed.error || parsed.message || errorDetail;
+      } catch {
+        // use fallback errorDetail
+      }
+    }
+    throw new Error(errorDetail);
+  }
+
+  // Guard against HTML payload (e.g. index.html served by Vite or proxy)
+  const trimmed = text.trim();
+  if (trimmed.startsWith('<') || (!contentType.includes('application/json') && trimmed.startsWith('<!'))) {
+    throw new Error(`Server returned HTML instead of expected JSON data for ${url}. The service may still be initializing.`);
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (err: any) {
+    throw new Error(`Failed to parse JSON response from ${contextDesc}: ${err.message || 'Invalid format'}`);
+  }
+}
+
 export interface SystemHealthResponse {
   status: string;
   service: string;
@@ -21,22 +56,14 @@ export interface SystemHealthResponse {
 }
 
 export async function checkSystemHealth(): Promise<SystemHealthResponse> {
-  const res = await fetch('/api/health');
-  if (!res.ok) {
-    throw new Error(`Health check failed with HTTP ${res.status}`);
-  }
-  return res.json();
+  return fetchJson<SystemHealthResponse>('/api/health', undefined, 'health check');
 }
 
 export async function getDashboardStats(): Promise<{
   stats: VerificationStats;
   recent: VerificationRecord[];
 }> {
-  const res = await fetch('/api/dashboard');
-  if (!res.ok) {
-    throw new Error(`Failed to fetch dashboard metrics: ${res.status}`);
-  }
-  const data = await res.json();
+  const data = await fetchJson<any>('/api/dashboard', undefined, 'dashboard stats');
   return {
     stats: {
       totalChecked: data.total_screenings || 0,
@@ -59,37 +86,21 @@ export async function getDocuments(
   if (status && status !== 'ALL') params.append('status', status);
   if (search) params.append('search', search);
 
-  const res = await fetch(`/api/documents?${params.toString()}`);
-  if (!res.ok) {
-    throw new Error(`Failed to list documents: ${res.status}`);
-  }
-  return res.json();
+  return fetchJson<RegisteredDocument[]>(`/api/documents?${params.toString()}`, undefined, 'documents list');
 }
 
 export async function getHistory(): Promise<VerificationRecord[]> {
-  const res = await fetch('/api/history');
-  if (!res.ok) {
-    throw new Error(`Failed to fetch verification history: ${res.status}`);
-  }
-  const rawList = await res.json();
+  const rawList = await fetchJson<any[]>('/api/history', undefined, 'history records');
   return (rawList || []).map(mapApiRecordToFrontend);
 }
 
 export async function getHistoryDetail(verificationId: string): Promise<VerificationRecord> {
-  const res = await fetch(`/api/history/${encodeURIComponent(verificationId)}`);
-  if (!res.ok) {
-    throw new Error(`Failed to load screening report ${verificationId}: ${res.status}`);
-  }
-  const raw = await res.json();
+  const raw = await fetchJson<any>(`/api/history/${encodeURIComponent(verificationId)}`, undefined, 'history record detail');
   return mapApiRecordToFrontend(raw);
 }
 
 export async function getAuditLogs(): Promise<AuditLogRecord[]> {
-  const res = await fetch('/api/audit/logs');
-  if (!res.ok) {
-    throw new Error(`Failed to fetch audit logs: ${res.status}`);
-  }
-  return res.json();
+  return fetchJson<AuditLogRecord[]>('/api/audit/logs', undefined, 'audit logs');
 }
 
 export interface DatabaseStatusResponse {
@@ -113,19 +124,15 @@ export interface DatabaseStatusResponse {
 }
 
 export async function getDatabaseStatus(): Promise<DatabaseStatusResponse> {
-  const res = await fetch('/api/database/status');
-  if (!res.ok) {
-    throw new Error(`Failed to check database status: ${res.status}`);
-  }
-  return res.json();
+  return fetchJson<DatabaseStatusResponse>('/api/database/status', undefined, 'database status');
 }
 
 export async function syncDatabase(): Promise<{ status: string; message: string; synced_at: string }> {
-  const res = await fetch('/api/database/sync', { method: 'POST' });
-  if (!res.ok) {
-    throw new Error(`Database sync request failed: ${res.status}`);
-  }
-  return res.json();
+  return fetchJson<{ status: string; message: string; synced_at: string }>(
+    '/api/database/sync',
+    { method: 'POST' },
+    'database sync'
+  );
 }
 
 export async function verifyAuditChain(): Promise<{
@@ -135,11 +142,7 @@ export async function verifyAuditChain(): Promise<{
   message: string;
   algorithm: string;
 }> {
-  const res = await fetch('/api/audit/verify', { method: 'POST' });
-  if (!res.ok) {
-    throw new Error(`Audit integrity check failed: ${res.status}`);
-  }
-  const data = await res.json();
+  const data = await fetchJson<any>('/api/audit/verify', { method: 'POST' }, 'audit verification');
   return {
     isValid: data.is_valid,
     totalBlocks: data.total_blocks,
@@ -150,11 +153,7 @@ export async function verifyAuditChain(): Promise<{
 }
 
 export async function getDemoScenarios(): Promise<DemoScenario[]> {
-  const res = await fetch('/api/demo/scenarios');
-  if (!res.ok) {
-    throw new Error(`Failed to fetch demo scenarios: ${res.status}`);
-  }
-  const list = await res.json();
+  const list = await fetchJson<any[]>('/api/demo/scenarios', undefined, 'demo scenarios');
   return (list || []).map((s: any) => ({
     id: s.scenario_key || String(s.id),
     demo_number: s.demo_number,
@@ -196,17 +195,15 @@ export async function screenDocument(
   formData.append('document_type', documentType);
   formData.append('officer_id', officerId);
 
-  const res = await fetch('/api/verification/screen', {
-    method: 'POST',
-    body: formData,
-  });
+  const result = await fetchJson<any>(
+    '/api/verification/screen',
+    {
+      method: 'POST',
+      body: formData,
+    },
+    'document screening'
+  );
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-    throw new Error(err.detail || 'Screening failed on server');
-  }
-
-  const result = await res.json();
   return mapApiScreeningResultToRecord(result, file.name);
 }
 
