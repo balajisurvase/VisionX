@@ -14,9 +14,11 @@ import {
   Lock,
   CheckCircle2,
   Table,
+  Sparkles,
 } from 'lucide-react';
 import { OfficerUser } from '../types/auth';
 import { checkSystemHealth, SystemHealthResponse, getDatabaseStatus, DatabaseStatusResponse, syncDatabase } from '../services/api';
+import { API_ENDPOINTS } from '../config/api';
 import {
   supabaseUrl,
   supabaseAnonKey,
@@ -30,8 +32,8 @@ interface SettingsProps {
   onLogout: () => void;
 }
 
-const SUPABASE_SCHEMA_SQL = `-- SIH 2026 Problem Statement 26188: SSB Document Screening Database
--- Run this script in your Supabase SQL Editor
+const SUPABASE_SCHEMA_SQL = `-- IdentityGuard AI (SIH 2026 Problem Statement 26188)
+-- 7 Supabase Tables + 2 Storage Buckets Architecture
 
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS users (
@@ -46,90 +48,97 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Seed System Users
-INSERT INTO users (id, username, full_name, role, email, user_id, password) VALUES 
-('307f9396-8bf8-4540-abc2-0f7a8d8ba07b', 'A001', 'Demo Officer Two', 'OFFICER', 'officer002@demo.local', 'A001', 'admin123'), 
-('360ef64a-ebd2-44fc-ba8e-7efa49bb8ee8', 'A002', 'Security Officer', 'OFFICER', 'officer@example.com', 'A002', 'admin123'), 
-('94f0c26a-99b1-46cc-9927-7cd8304f924c', 'A003', 'Demo Officer One', 'OFFICER', 'officer001@demo.local', 'A003', 'admin123'), 
-('a051e189-62a0-4f40-843b-0d9ecdd968e5', 'A004', 'System Administrator', 'ADMIN', 'admin@example.com', 'A004', 'admin123')
-ON CONFLICT (id) DO NOTHING;
-
--- 2. Officers Table
-CREATE TABLE IF NOT EXISTS officers (
-  id BIGSERIAL PRIMARY KEY,
-  user_id VARCHAR(50) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  full_name VARCHAR(100) NOT NULL,
-  role VARCHAR(50) DEFAULT 'Officer',
-  status VARCHAR(20) DEFAULT 'Active',
-  department VARCHAR(150),
-  designation VARCHAR(150),
-  terminal VARCHAR(150),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+-- 2. Verification Requests Table
+CREATE TABLE IF NOT EXISTS verification_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  request_status VARCHAR(40) NOT NULL DEFAULT 'COMPLETED',
+  document_type VARCHAR(60) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Seed Default Officers
-INSERT INTO officers (user_id, password_hash, full_name, role, status)
-VALUES 
-  ('A001', 'admin123', 'Demo Officer Two', 'Officer', 'Active'),
-  ('A002', 'admin123', 'Security Officer', 'Officer', 'Active'),
-  ('A003', 'admin123', 'Demo Officer One', 'Officer', 'Active'),
-  ('A004', 'admin123', 'System Administrator', 'Admin', 'Active'),
-  ('officer001', 'Officer@123', 'Inspector Rajeshwar Kumar', 'Officer', 'Active'),
-  ('demo_officer', 'Demo@123', 'Demo Security Officer', 'Officer', 'Active'),
-  ('admin01', 'Admin@123', 'Commander Vikramaditya Singh', 'Admin', 'Active')
-ON CONFLICT (user_id) DO NOTHING;
+-- 3. Verification Media Table
+CREATE TABLE IF NOT EXISTS verification_media (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  verification_id UUID REFERENCES verification_requests(id) ON DELETE CASCADE,
+  media_type VARCHAR(40) NOT NULL,
+  storage_bucket VARCHAR(80) NOT NULL DEFAULT 'verification-documents',
+  file_path TEXT NOT NULL,
+  file_size BIGINT,
+  mime_type VARCHAR(80),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
--- 3. Documents Table
-CREATE TABLE IF NOT EXISTS documents (
-  id BIGSERIAL PRIMARY KEY,
-  document_type VARCHAR(50) NOT NULL,
-  document_number VARCHAR(100) UNIQUE NOT NULL,
-  full_name VARCHAR(100) NOT NULL,
-  nationality VARCHAR(50) NOT NULL,
+-- 4. Extracted Data Table
+CREATE TABLE IF NOT EXISTS extracted_data (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  verification_id UUID REFERENCES verification_requests(id) ON DELETE CASCADE,
+  document_number VARCHAR(120),
+  full_name VARCHAR(180),
   date_of_birth DATE,
-  date_of_expiry DATE,
+  nationality VARCHAR(60),
   gender VARCHAR(20),
-  document_status VARCHAR(20) DEFAULT 'VALID',
-  document_hash TEXT NOT NULL,
-  ocr_text TEXT,
-  file_path TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. Verification Records Table
-CREATE TABLE IF NOT EXISTS verification_records (
-  id BIGSERIAL PRIMARY KEY,
-  verification_id VARCHAR(50) UNIQUE NOT NULL,
-  document_id BIGINT REFERENCES documents(id) ON DELETE SET NULL,
-  officer_id VARCHAR(50) NOT NULL,
-  ocr_status VARCHAR(20) DEFAULT 'PASSED',
-  ocr_confidence NUMERIC(5,2) DEFAULT 98.0,
-  validation_status VARCHAR(20) DEFAULT 'PASSED',
+  issue_date DATE,
+  expiry_date DATE,
+  issuing_country VARCHAR(60),
+  mrz_line1 TEXT,
+  mrz_line2 TEXT,
+  raw_text TEXT,
+  ocr_confidence NUMERIC(5,2),
   mrz_valid BOOLEAN DEFAULT TRUE,
-  tampering_status VARCHAR(20) DEFAULT 'PASSED',
-  tampering_score NUMERIC(5,2) DEFAULT 4.0,
-  face_verification_status VARCHAR(20) DEFAULT 'PASSED',
-  face_match_score NUMERIC(5,2) DEFAULT 95.0,
-  risk_score INT DEFAULT 15,
-  risk_level VARCHAR(20) DEFAULT 'LOW',
-  final_result VARCHAR(20) NOT NULL,
-  document_hash TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 4. Audit Logs Table (Blockchain Hash Chain)
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id BIGSERIAL PRIMARY KEY,
-  verification_id VARCHAR(50) NOT NULL,
-  officer_id VARCHAR(50) NOT NULL,
-  document_hash TEXT NOT NULL,
-  previous_hash TEXT NOT NULL,
-  current_hash TEXT NOT NULL,
-  action VARCHAR(100) NOT NULL,
-  metadata JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);`;
+-- 5. Verification Checks Table
+CREATE TABLE IF NOT EXISTS verification_checks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  verification_id UUID REFERENCES verification_requests(id) ON DELETE CASCADE,
+  check_type VARCHAR(60) NOT NULL,
+  check_status VARCHAR(40) NOT NULL,
+  score NUMERIC(5,2),
+  confidence NUMERIC(5,2),
+  message TEXT,
+  details JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 6. Verification Results Table
+CREATE TABLE IF NOT EXISTS verification_results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  verification_id UUID REFERENCES verification_requests(id) ON DELETE CASCADE,
+  ocr_score NUMERIC(5,2),
+  mrz_score NUMERIC(5,2),
+  authenticity_score NUMERIC(5,2),
+  tampering_score NUMERIC(5,2),
+  face_match_score NUMERIC(5,2),
+  liveness_score NUMERIC(5,2),
+  image_quality_score NUMERIC(5,2),
+  risk_score NUMERIC(5,2) NOT NULL,
+  confidence_score NUMERIC(5,2),
+  risk_level VARCHAR(30) NOT NULL,
+  final_status VARCHAR(40) NOT NULL,
+  explanation TEXT,
+  recommendation TEXT,
+  is_demo_result BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 7. Verification Logs Table
+CREATE TABLE IF NOT EXISTS verification_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  verification_id UUID REFERENCES verification_requests(id) ON DELETE CASCADE,
+  log_level VARCHAR(30) DEFAULT 'INFO',
+  event_type VARCHAR(80) NOT NULL,
+  message TEXT NOT NULL,
+  details JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Storage Buckets:
+-- 1. verification-documents (Document scans, selfie photos, crops)
+-- 2. verification-reports (Exported forensic screening dossiers & audit summaries)
+`;
 
 export const Settings: React.FC<SettingsProps> = ({ user, onLogout }) => {
   const [urlInput, setUrlInput] = useState<string>(supabaseUrl || '');
@@ -141,11 +150,47 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout }) => {
   const [loadingHealth, setLoadingHealth] = useState<boolean>(false);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [testingGemini, setTestingGemini] = useState<boolean>(false);
+  const [geminiStatus, setGeminiStatus] = useState<{
+    configured: boolean;
+    status: string;
+    model: string;
+    message: string;
+    sample?: string;
+  } | null>(null);
 
   useEffect(() => {
     loadHealth();
     loadDbStatus();
+    checkGeminiStatus();
   }, []);
+
+  const checkGeminiStatus = async () => {
+    try {
+      const res = await fetch(API_ENDPOINTS.gemini.status);
+      const data = await res.json();
+      setGeminiStatus({
+        configured: data.configured,
+        status: data.status,
+        model: data.model || 'gemini-3.8-flash',
+        message: data.message,
+        sample: data.response_sample,
+      });
+    } catch (err: any) {
+      setGeminiStatus({
+        configured: false,
+        status: 'error',
+        model: 'gemini-3.8-flash',
+        message: 'Could not connect to /api/gemini/status',
+      });
+    }
+  };
+
+  const handleTestGemini = async () => {
+    setTestingGemini(true);
+    await checkGeminiStatus();
+    setTestingGemini(false);
+  };
 
   const loadHealth = async () => {
     setLoadingHealth(true);
@@ -622,6 +667,109 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout }) => {
                 <RefreshCw className={`w-3.5 h-3.5 text-[#4F46E5] ${loadingHealth ? 'animate-spin' : ''}`} />
                 <span>Refresh Diagnostics</span>
               </button>
+            </div>
+
+            {/* Featured Gemini API Pipeline Card */}
+            <div className="p-5 rounded-2xl border border-[#4F46E5]/20 bg-gradient-to-br from-[#EEF2FF]/50 to-white space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#4F46E5]/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#4F46E5] text-white flex items-center justify-center font-bold">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-sm text-[#111827]">Google Gemini 3.8 Flash</h3>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EEF2FF] text-[#4F46E5] border border-[#4F46E5]/20">
+                        Server-Side AI
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Officer-friendly explanations, OCR inconsistency analysis & reason-for-suspicion generation
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+                      geminiStatus?.status === 'connected'
+                        ? 'bg-[#DCFCE7] text-[#15803D]'
+                        : geminiStatus?.configured
+                        ? 'bg-[#FEF9C3] text-[#854D0E]'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        geminiStatus?.status === 'connected' ? 'bg-[#16A34A] animate-pulse' : 'bg-gray-400'
+                      }`}
+                    />
+                    {geminiStatus?.status === 'connected'
+                      ? 'Connected & Active'
+                      : geminiStatus?.configured
+                      ? 'Configured'
+                      : 'Not Configured'}
+                  </span>
+
+                  <button
+                    onClick={handleTestGemini}
+                    disabled={testingGemini}
+                    className="px-3 py-1 rounded-xl text-xs font-bold bg-[#4F46E5] text-white hover:bg-[#4338CA] transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-2xs"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${testingGemini ? 'animate-spin' : ''}`} />
+                    <span>{testingGemini ? 'Testing...' : 'Test Connection'}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                <div className="p-3 bg-white rounded-xl border border-gray-100 space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    Security & Architecture
+                  </span>
+                  <p className="text-gray-700 leading-relaxed text-[11px]">
+                    Key stored securely as <code className="bg-gray-100 px-1 py-0.5 rounded font-mono text-[#4F46E5]">GEMINI_API_KEY</code> on backend. Zero browser exposure.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-gray-100 space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    Active Model & SDK
+                  </span>
+                  <p className="text-gray-700 leading-relaxed text-[11px]">
+                    <strong className="text-[#111827]">models/gemini-3.8-flash</strong> via official <code className="bg-gray-100 px-1 py-0.5 rounded font-mono text-gray-600">@google/genai</code> TypeScript SDK.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white rounded-xl border border-gray-100 space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+                    Pipeline Role
+                  </span>
+                  <p className="text-gray-700 leading-relaxed text-[11px]">
+                    Synthesizes officer explanations, validates cross-field consistency, and justifies flags without replacing raw OpenCV/MRZ forensics.
+                  </p>
+                </div>
+              </div>
+
+              {geminiStatus && (
+                <div
+                  className={`p-3 rounded-xl text-xs font-mono flex items-start gap-2 ${
+                    geminiStatus.status === 'connected'
+                      ? 'bg-[#DCFCE7]/60 border border-[#16A34A]/20 text-[#15803D]'
+                      : 'bg-gray-50 border border-gray-200 text-gray-600'
+                  }`}
+                >
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <div className="font-bold">{geminiStatus.message}</div>
+                    {geminiStatus.sample && (
+                      <div className="text-[11px] opacity-80 mt-0.5">
+                        Test Echo: &ldquo;{geminiStatus.sample}&rdquo;
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* AI Models Grid */}

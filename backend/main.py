@@ -1,12 +1,14 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from fastapi import FastAPI
+from typing import Optional
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import UPLOAD_DIR
-from backend.models.schemas import SystemHealthStatus, AIModelStatus
+from backend.models.schemas import SystemHealthStatus, AIModelStatus, ScreeningResult
+from backend.routes.verification import screen_document
 from backend.routes.auth import router as auth_router
 from backend.routes.verification import router as verification_router
 from backend.routes.ocr import router as ocr_router
@@ -19,6 +21,7 @@ from backend.routes.documents import router as documents_router
 from backend.routes.history import router as history_router
 from backend.routes.audit import router as audit_router
 from backend.routes.demo import router as demo_router
+from backend.routes.gemini import router as gemini_router
 from backend.services.supabase_service import is_supabase_configured
 from backend.services.gemini_service import is_gemini_available
 
@@ -47,6 +50,18 @@ if demo_docs_path.exists():
 # Register all modular routers under /api
 app.include_router(auth_router, prefix="/api")
 app.include_router(verification_router, prefix="/api")
+app.include_router(verification_router, prefix="/api/verify")
+
+@app.post("/api/verify", response_model=ScreeningResult, tags=["Automated Pipeline"])
+async def verify_alias(
+    file: UploadFile = File(...),
+    person_photo: Optional[UploadFile] = File(None),
+    document_type: str = Form("Passport"),
+    officer_id: str = Form("officer001")
+):
+    """Direct alias for /api/verify matching the frontend API_ENDPOINTS.verify call"""
+    return await screen_document(file=file, person_photo=person_photo, document_type=document_type, officer_id=officer_id)
+
 app.include_router(ocr_router, prefix="/api")
 app.include_router(validation_router, prefix="/api")
 app.include_router(tampering_router, prefix="/api")
@@ -57,6 +72,7 @@ app.include_router(documents_router, prefix="/api")
 app.include_router(history_router, prefix="/api")
 app.include_router(audit_router, prefix="/api")
 app.include_router(demo_router, prefix="/api")
+app.include_router(gemini_router, prefix="/api")
 
 @app.get("/api/health", response_model=SystemHealthStatus)
 def health_check():

@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Login } from './pages/Login';
+import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { VerifyDocument } from './pages/VerifyDocument';
 import { Documents } from './pages/Documents';
 import { History } from './pages/History';
+import { Reports } from './pages/Reports';
+import { Profile } from './pages/Profile';
 import { DemoCenter } from './pages/DemoCenter';
 import { Settings } from './pages/Settings';
 import { getCurrentSession, logoutUser } from './services/authService';
@@ -47,7 +50,7 @@ export function App() {
   };
 
   const handleNavigate = (path: string) => {
-    if (!isAuthenticated && path !== '/login') {
+    if (!isAuthenticated && path !== '/login' && path !== '/landing') {
       setCurrentPath('/login');
       return;
     }
@@ -67,9 +70,29 @@ export function App() {
     setCurrentPath('/verify');
   };
 
+  const handleViewReport = (record: VerificationRecord) => {
+    setInspectedRecord(record);
+    setCurrentPath('/reports');
+  };
+
   const handleVerifySpecificDoc = (docNumber: string) => {
     setCurrentPath('/verify');
   };
+
+  // If user requests landing page
+  if (currentPath === '/landing') {
+    return (
+      <Landing
+        onGetStarted={() => {
+          if (isAuthenticated) {
+            setCurrentPath('/dashboard');
+          } else {
+            setCurrentPath('/login');
+          }
+        }}
+      />
+    );
+  }
 
   // If not authenticated, render the dedicated SSB Officer Login page
   if (!isAuthenticated || currentPath === '/login') {
@@ -82,12 +105,12 @@ export function App() {
       case '/dashboard':
       case '/':
         return {
-          title: 'SSB Screening Dashboard',
+          title: 'IdentityGuard AI Dashboard',
           subtitle: 'Real-time AI-based identity & document screening analytics',
         };
       case '/verify':
         return {
-          title: 'Document Verification',
+          title: 'New Verification',
           subtitle: 'Automated 8-stage computer vision & biometric screening pipeline',
         };
       case '/documents':
@@ -97,12 +120,22 @@ export function App() {
         };
       case '/history':
         return {
-          title: 'Verification History & Blockchain Ledger',
+          title: 'Verification History & Ledger',
           subtitle: 'Cryptographic SHA-256 tamper-evident screening audit trail',
+        };
+      case '/reports':
+        return {
+          title: 'Official Verification Reports',
+          subtitle: 'Multi-layer forensic screening certificates & printable dockets',
+        };
+      case '/profile':
+        return {
+          title: 'Officer Profile & Credentials',
+          subtitle: 'Terminal authorization and identity screening statistics',
         };
       case '/demo':
         return {
-          title: 'Demo Center (SIH 2026)',
+          title: 'Benchmark Demo Center (SIH 2026)',
           subtitle: 'Evaluation scenarios for Problem Statement 26188 evaluation',
         };
       case '/settings':
@@ -112,8 +145,8 @@ export function App() {
         };
       default:
         return {
-          title: 'SSB Document Screening',
-          subtitle: 'Ministry of Home Affairs • Police II Division',
+          title: 'IdentityGuard AI Screening',
+          subtitle: 'Ministry of Home Affairs • SIH 2026',
         };
     }
   };
@@ -128,6 +161,7 @@ export function App() {
         onNavigate={handleNavigate}
         user={user}
         onLogout={handleLogout}
+        onViewLanding={() => setCurrentPath('/landing')}
       />
 
       {/* Main Content Viewport */}
@@ -163,7 +197,24 @@ export function App() {
             <Documents onVerifyDocument={handleVerifySpecificDoc} />
           )}
 
-          {currentPath === '/history' && <History />}
+          {currentPath === '/history' && (
+            <History
+              onNavigate={handleNavigate}
+              onInspectRecord={handleInspectRecord}
+              onViewReport={handleViewReport}
+            />
+          )}
+
+          {currentPath === '/reports' && (
+            <Reports
+              initialRecord={inspectedRecord}
+              onNavigateToVerify={() => setCurrentPath('/verify')}
+            />
+          )}
+
+          {currentPath === '/profile' && (
+            <Profile user={user} onLogout={handleLogout} />
+          )}
 
           {currentPath === '/demo' && (
             <DemoCenter onSelectDemoScenario={handleSelectDemoScenario} />

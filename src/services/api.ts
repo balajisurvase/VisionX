@@ -6,6 +6,7 @@ import {
   AuditLogRecord,
   DocumentType,
 } from '../types/verification';
+import { API_ENDPOINTS } from '../config/api';
 
 /**
  * Bulletproof JSON fetch helper that strictly guards against HTML responses (<!doctype ...),
@@ -56,14 +57,14 @@ export interface SystemHealthResponse {
 }
 
 export async function checkSystemHealth(): Promise<SystemHealthResponse> {
-  return fetchJson<SystemHealthResponse>('/api/health', undefined, 'health check');
+  return fetchJson<SystemHealthResponse>(API_ENDPOINTS.health, undefined, 'health check');
 }
 
 export async function getDashboardStats(): Promise<{
   stats: VerificationStats;
   recent: VerificationRecord[];
 }> {
-  const data = await fetchJson<any>('/api/dashboard', undefined, 'dashboard stats');
+  const data = await fetchJson<any>(API_ENDPOINTS.dashboard, undefined, 'dashboard stats');
   return {
     stats: {
       totalChecked: data.total_screenings || 0,
@@ -86,21 +87,23 @@ export async function getDocuments(
   if (status && status !== 'ALL') params.append('status', status);
   if (search) params.append('search', search);
 
-  return fetchJson<RegisteredDocument[]>(`/api/documents?${params.toString()}`, undefined, 'documents list');
+  const base = API_ENDPOINTS.documents;
+  const url = params.toString() ? `${base}?${params.toString()}` : base;
+  return fetchJson<RegisteredDocument[]>(url, undefined, 'documents list');
 }
 
 export async function getHistory(): Promise<VerificationRecord[]> {
-  const rawList = await fetchJson<any[]>('/api/history', undefined, 'history records');
+  const rawList = await fetchJson<any[]>(API_ENDPOINTS.verification.history, undefined, 'history records');
   return (rawList || []).map(mapApiRecordToFrontend);
 }
 
 export async function getHistoryDetail(verificationId: string): Promise<VerificationRecord> {
-  const raw = await fetchJson<any>(`/api/history/${encodeURIComponent(verificationId)}`, undefined, 'history record detail');
+  const raw = await fetchJson<any>(API_ENDPOINTS.verification.detail(verificationId), undefined, 'history record detail');
   return mapApiRecordToFrontend(raw);
 }
 
 export async function getAuditLogs(): Promise<AuditLogRecord[]> {
-  return fetchJson<AuditLogRecord[]>('/api/audit/logs', undefined, 'audit logs');
+  return fetchJson<AuditLogRecord[]>(API_ENDPOINTS.audit.logs, undefined, 'audit logs');
 }
 
 export interface DatabaseStatusResponse {
@@ -109,27 +112,49 @@ export interface DatabaseStatusResponse {
   supabase_connected: boolean;
   supabase_url: string;
   counts: {
-    users: number;
-    documents: number;
-    verification_records: number;
-    audit_blocks: number;
-    demo_scenarios: number;
+    users?: number;
+    verification_requests?: number;
+    verification_media?: number;
+    extracted_data?: number;
+    verification_checks?: number;
+    verification_results?: number;
+    verification_logs?: number;
+    documents?: number;
+    verification_records?: number;
+    audit_blocks?: number;
+    demo_scenarios?: number;
   };
   tables: Array<{
     table_name: string;
     records: number;
     status: string;
   }>;
+  buckets?: Array<{
+    bucket_name: string;
+    status: string;
+  }>;
   timestamp: string;
 }
 
 export async function getDatabaseStatus(): Promise<DatabaseStatusResponse> {
-  return fetchJson<DatabaseStatusResponse>('/api/database/status', undefined, 'database status');
+  return fetchJson<DatabaseStatusResponse>(API_ENDPOINTS.database.status, undefined, 'database status');
+}
+
+export async function updateSupabaseSettings(url: string, key: string): Promise<DatabaseStatusResponse> {
+  return fetchJson<DatabaseStatusResponse>(
+    API_ENDPOINTS.settings.supabase,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, key }),
+    },
+    'update supabase settings'
+  );
 }
 
 export async function syncDatabase(): Promise<{ status: string; message: string; synced_at: string }> {
   return fetchJson<{ status: string; message: string; synced_at: string }>(
-    '/api/database/sync',
+    API_ENDPOINTS.database.sync,
     { method: 'POST' },
     'database sync'
   );
@@ -142,7 +167,7 @@ export async function verifyAuditChain(): Promise<{
   message: string;
   algorithm: string;
 }> {
-  const data = await fetchJson<any>('/api/audit/verify', { method: 'POST' }, 'audit verification');
+  const data = await fetchJson<any>(API_ENDPOINTS.audit.verify, { method: 'POST' }, 'audit verification');
   return {
     isValid: data.is_valid,
     totalBlocks: data.total_blocks,
@@ -153,7 +178,7 @@ export async function verifyAuditChain(): Promise<{
 }
 
 export async function getDemoScenarios(): Promise<DemoScenario[]> {
-  const list = await fetchJson<any[]>('/api/demo/scenarios', undefined, 'demo scenarios');
+  const list = await fetchJson<any[]>(API_ENDPOINTS.demoScenarios, undefined, 'demo scenarios');
   return (list || []).map((s: any) => ({
     id: s.scenario_key || String(s.id),
     demo_number: s.demo_number,
@@ -196,7 +221,7 @@ export async function screenDocument(
   formData.append('officer_id', officerId);
 
   const result = await fetchJson<any>(
-    '/api/verification/screen',
+    API_ENDPOINTS.verify,
     {
       method: 'POST',
       body: formData,
@@ -205,6 +230,29 @@ export async function screenDocument(
   );
 
   return mapApiScreeningResultToRecord(result, file.name);
+}
+
+export const verifyDocument = screenDocument;
+
+export async function explainVerification(params: {
+  document_type?: string;
+  applicant_name?: string;
+  ocr_score?: number;
+  mrz_score?: number;
+  tampering_score?: number;
+  face_match_score?: number;
+  risk_score?: number;
+  issues?: string[];
+}): Promise<{ explanation: string; recommendation: string; engine: string }> {
+  return fetchJson<{ explanation: string; recommendation: string; engine: string }>(
+    API_ENDPOINTS.gemini.explain,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    },
+    'gemini explain'
+  );
 }
 
 function mapApiRecordToFrontend(r: any): VerificationRecord {

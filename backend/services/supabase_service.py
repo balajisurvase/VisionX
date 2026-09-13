@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+import hashlib
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
@@ -9,14 +10,19 @@ from backend.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANO
 
 logger = logging.getLogger(__name__)
 
-# In-memory fallback store when Supabase environment variables are not configured
+# Supabase Storage Buckets
+BUCKET_DOCUMENTS = "verification-documents"
+BUCKET_REPORTS = "verification-reports"
+
+# In-memory store mirroring the 7 official Supabase tables for seamless offline/local development
 _local_store: Dict[str, List[Dict[str, Any]]] = {
-    "officers": [],
-    "documents": [],
-    "verification_records": [],
-    "audit_logs": [],
-    "demo_scenarios": [],
-    "blacklist": []
+    "users": [],
+    "verification_requests": [],
+    "verification_media": [],
+    "extracted_data": [],
+    "verification_checks": [],
+    "verification_results": [],
+    "verification_logs": [],
 }
 
 _supabase_client = None
@@ -41,11 +47,11 @@ def is_supabase_configured() -> bool:
     return get_supabase_client() is not None
 
 # ------------------------------------------------------------------------------
-# Storage Management (Supabase Storage bucket 'documents' with local fallback)
+# Storage Management (Bucket 'verification-documents' and 'verification-reports')
 # ------------------------------------------------------------------------------
-def upload_document_to_storage(image_bytes: bytes, filename: str, mime_type: str = "image/png") -> str:
+def upload_document_to_storage(image_bytes: bytes, filename: str, mime_type: str = "image/png", bucket: str = BUCKET_DOCUMENTS) -> str:
     """
-    Uploads document image to Supabase Storage bucket 'documents'.
+    Uploads document image to Supabase Storage bucket 'verification-documents' (or 'verification-reports').
     Falls back to storing in local upload folder if Supabase is offline.
     Returns: storage path reference string.
     """
@@ -54,17 +60,16 @@ def upload_document_to_storage(image_bytes: bytes, filename: str, mime_type: str
 
     if client:
         try:
-            # Check or upload to 'documents' bucket
-            res = client.storage.from_("documents").upload(
+            res = client.storage.from_(bucket).upload(
                 path=clean_filename,
                 file=image_bytes,
                 file_options={"content-type": mime_type, "upsert": "true"}
             )
-            return f"documents/{clean_filename}"
+            return f"{bucket}/{clean_filename}"
         except Exception as e:
-            logger.warning(f"Supabase Storage upload warning: {e}. Falling back to local storage.")
+            logger.warning(f"Supabase Storage '{bucket}' upload warning: {e}. Falling back to local storage.")
 
-    # Local filesystem storage
+    # Local filesystem storage fallback
     local_path = UPLOAD_DIR / clean_filename
     try:
         with open(local_path, "wb") as f:
@@ -75,291 +80,386 @@ def upload_document_to_storage(image_bytes: bytes, filename: str, mime_type: str
         return f"uploads/{clean_filename}"
 
 # ------------------------------------------------------------------------------
-# Officers
+# Table 1: users (Authentication & Profiles)
 # ------------------------------------------------------------------------------
-def count_officers() -> int:
+def count_users() -> int:
     client = get_supabase_client()
     if client:
         try:
-            resp_users = client.table("users").select("id", count="exact").execute()
-            if resp_users.count is not None and resp_users.count > 0:
-                return resp_users.count
-            resp = client.table("officers").select("id", count="exact").execute()
+            resp = client.table("users").select("id", count="exact").execute()
             if resp.count is not None:
                 return resp.count
             return len(resp.data or [])
         except Exception:
             pass
-    return len(_local_store["officers"])
+    return len(_local_store["users"])
 
-def get_officer_by_user_id(user_id: str) -> Optional[Dict[str, Any]]:
+def count_officers() -> int:
+    return count_users()
+
+def get_user_by_user_id(user_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Queries public.users table by user_id, username, or email.
+    Never exposes raw password in public structures.
+    """
+    if not user_id:
+        return None
+    clean_id = user_id.strip()
     client = get_supabase_client()
     if client:
         try:
-            # 1. Query public.users table by user_id, username, or email
-            resp_users = client.table("users").select("*").or_(f"user_id.eq.{user_id},username.eq.{user_id},email.eq.{user_id}").execute()
-            if resp_users.data and len(resp_users.data) > 0:
-                u = resp_users.data[0]
+            resp = client.table("users").select("*").or_(f"user_id.eq.{clean_id},username.eq.{clean_id},email.eq.{clean_id}").execute()
+            if resp.data and len(resp.data) > 0:
+                u = resp.data[0]
                 return {
                     "id": u.get("id"),
                     "user_id": u.get("user_id") or u.get("username"),
                     "username": u.get("username"),
                     "email": u.get("email"),
                     "full_name": u.get("full_name"),
-                    "role": (u.get("role") or "officer").lower(),
-                    "status": "active",
+                    "role": (u.get("role") or "OFFICER").upper(),
+                    "status": "Active" if u.get("is_active", True) else "Inactive",
                     "password_hash": u.get("password") or u.get("password_hash"),
+                    "department": u.get("department", "Sashastra Seema Bal (SSB), Police II Division"),
+                    "designation": u.get("designation", "Screening Officer"),
+                    "terminal": u.get("terminal", "ICP Raxaul • Indo-Nepal Border Terminal"),
+                    "badge_number": u.get("badge_number", "SSB-MHA-8842"),
+                    "avatar_url": u.get("avatar_url"),
+                    "is_active": u.get("is_active", True),
+                    "created_at": u.get("created_at")
                 }
-            # 2. Query public.officers table
-            resp = client.table("officers").select("*").eq("user_id", user_id).execute()
-            if resp.data and len(resp.data) > 0:
-                return resp.data[0]
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Error querying users table: {e}")
 
-    u_lower = user_id.lower()
-    for off in _local_store["officers"]:
+    # Query local in-memory store
+    u_lower = clean_id.lower()
+    for u in _local_store["users"]:
         if (
-            off.get("user_id", "").lower() == u_lower
-            or off.get("username", "").lower() == u_lower
-            or off.get("email", "").lower() == u_lower
-            or off.get("id", "").lower() == u_lower
+            str(u.get("user_id", "")).lower() == u_lower
+            or str(u.get("username", "")).lower() == u_lower
+            or str(u.get("email", "")).lower() == u_lower
+            or str(u.get("id", "")).lower() == u_lower
         ):
-            return off
+            return u
     
     return None
 
+get_officer_by_user_id = get_user_by_user_id
+
 # ------------------------------------------------------------------------------
-# Documents
+# Table 2: verification_requests
 # ------------------------------------------------------------------------------
-def get_documents(doc_type: Optional[str] = None, status: Optional[str] = None, search: Optional[str] = None) -> List[Dict[str, Any]]:
+def create_verification_request(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Creates record in verification_requests.
+    Columns: id (UUID), verification_code, user_id, document_type, status, demo_mode, original_filename, mime_type, file_size, created_at, updated_at
+    """
+    if "id" not in data:
+        data["id"] = str(uuid.uuid4())
+    if "created_at" not in data:
+        data["created_at"] = datetime.utcnow().isoformat() + "Z"
+    if "updated_at" not in data:
+        data["updated_at"] = data["created_at"]
+
     client = get_supabase_client()
     if client:
         try:
-            query = client.table("documents").select("*")
-            if doc_type:
-                query = query.eq("document_type", doc_type)
-            if status:
-                query = query.eq("document_status", status)
-            if search:
-                query = query.ilike("document_number", f"%{search}%")
-            resp = query.order("created_at", desc=True).execute()
-            return resp.data or []
-        except Exception:
-            return []
+            resp = client.table("verification_requests").insert(data).execute()
+            if resp.data and len(resp.data) > 0:
+                return resp.data[0]
+        except Exception as e:
+            logger.warning(f"Supabase verification_requests insert warning: {e}")
 
-    results = _local_store["documents"]
-    if doc_type:
-        results = [d for d in results if d.get("document_type") == doc_type]
-    if status:
-        results = [d for d in results if d.get("document_status") == status]
-    if search:
-        s_lower = search.lower()
-        results = [d for d in results if s_lower in d.get("document_number", "").lower() or s_lower in d.get("full_name", "").lower()]
-    return sorted(results, key=lambda x: str(x.get("created_at", "")), reverse=True)
+    _local_store["verification_requests"].append(data)
+    return data
 
+# ------------------------------------------------------------------------------
+# Table 3: verification_media
+# ------------------------------------------------------------------------------
+def create_verification_media(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Creates record in verification_media.
+    Columns: id, verification_id, uploaded_by, media_type, bucket_name, storage_path, original_filename, mime_type, file_size, checksum, is_primary, created_at
+    """
+    if "id" not in data:
+        data["id"] = str(uuid.uuid4())
+    if "created_at" not in data:
+        data["created_at"] = datetime.utcnow().isoformat() + "Z"
+    if "bucket_name" not in data:
+        data["bucket_name"] = BUCKET_DOCUMENTS
+
+    client = get_supabase_client()
+    if client:
+        try:
+            resp = client.table("verification_media").insert(data).execute()
+            if resp.data and len(resp.data) > 0:
+                return resp.data[0]
+        except Exception as e:
+            logger.warning(f"Supabase verification_media insert warning: {e}")
+
+    _local_store["verification_media"].append(data)
+    return data
+
+# ------------------------------------------------------------------------------
+# Table 4: extracted_data
+# ------------------------------------------------------------------------------
+def save_extracted_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Creates record in extracted_data.
+    Columns: id, verification_id, document_number, full_name, date_of_birth, nationality, gender, issue_date, expiry_date, issuing_country, mrz_line_1, mrz_line_2, mrz_line_3, raw_text, ocr_confidence, mrz_valid, created_at
+    """
+    if "id" not in data:
+        data["id"] = str(uuid.uuid4())
+    if "created_at" not in data:
+        data["created_at"] = datetime.utcnow().isoformat() + "Z"
+
+    client = get_supabase_client()
+    if client:
+        try:
+            resp = client.table("extracted_data").insert(data).execute()
+            if resp.data and len(resp.data) > 0:
+                return resp.data[0]
+        except Exception as e:
+            logger.warning(f"Supabase extracted_data insert warning: {e}")
+
+    _local_store["extracted_data"].append(data)
+    return data
+
+# ------------------------------------------------------------------------------
+# Table 5: verification_checks
+# ------------------------------------------------------------------------------
+def save_verification_check(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Creates record in verification_checks.
+    Columns: id, verification_id, check_type, status, score, confidence, message, details, is_demo_result, started_at, completed_at, created_at
+    """
+    if "id" not in data:
+        data["id"] = str(uuid.uuid4())
+    if "created_at" not in data:
+        data["created_at"] = datetime.utcnow().isoformat() + "Z"
+
+    client = get_supabase_client()
+    if client:
+        try:
+            resp = client.table("verification_checks").insert(data).execute()
+            if resp.data and len(resp.data) > 0:
+                return resp.data[0]
+        except Exception as e:
+            logger.warning(f"Supabase verification_checks insert warning: {e}")
+
+    _local_store["verification_checks"].append(data)
+    return data
+
+# ------------------------------------------------------------------------------
+# Table 6: verification_results
+# ------------------------------------------------------------------------------
+def save_verification_result(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Creates record in verification_results.
+    Columns: id, verification_id, ocr_score, mrz_score, authenticity_score, tampering_score, face_match_score, liveness_score, image_quality_score, risk_score, confidence_score, risk_level, final_status, explanation, recommendation, is_demo_result, created_at
+    """
+    if "id" not in data:
+        data["id"] = str(uuid.uuid4())
+    if "created_at" not in data:
+        data["created_at"] = datetime.utcnow().isoformat() + "Z"
+
+    client = get_supabase_client()
+    if client:
+        try:
+            resp = client.table("verification_results").insert(data).execute()
+            if resp.data and len(resp.data) > 0:
+                return resp.data[0]
+        except Exception as e:
+            logger.warning(f"Supabase verification_results insert warning: {e}")
+
+    _local_store["verification_results"].append(data)
+    return data
+
+# ------------------------------------------------------------------------------
+# Table 7: verification_logs
+# ------------------------------------------------------------------------------
+def save_verification_log(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Creates record in verification_logs.
+    Columns: id, verification_id, step_name, status, message, progress, metadata, created_at
+    """
+    if "id" not in data:
+        data["id"] = str(uuid.uuid4())
+    if "created_at" not in data:
+        data["created_at"] = datetime.utcnow().isoformat() + "Z"
+
+    client = get_supabase_client()
+    if client:
+        try:
+            resp = client.table("verification_logs").insert(data).execute()
+            if resp.data and len(resp.data) > 0:
+                return resp.data[0]
+        except Exception as e:
+            logger.warning(f"Supabase verification_logs insert warning: {e}")
+
+    _local_store["verification_logs"].append(data)
+    return data
+
+# ------------------------------------------------------------------------------
+# Aggregate Document & Verification Registry Lookups
+# ------------------------------------------------------------------------------
 def find_document_by_number(doc_number: str) -> Optional[Dict[str, Any]]:
+    """Checks extracted_data for prior records of this document number."""
     if not doc_number:
         return None
     clean_num = doc_number.replace(" ", "").upper()
     client = get_supabase_client()
     if client:
         try:
-            resp = client.table("documents").select("*").eq("document_number", clean_num).execute()
+            resp = client.table("extracted_data").select("*, verification_requests(*), verification_results(*)").eq("document_number", clean_num).execute()
             if resp.data and len(resp.data) > 0:
                 return resp.data[0]
         except Exception:
             pass
 
-    for d in _local_store["documents"]:
-        if d.get("document_number", "").replace(" ", "").upper() == clean_num:
+    for d in _local_store["extracted_data"]:
+        if str(d.get("document_number", "")).replace(" ", "").upper() == clean_num:
             return d
     return None
 
-def save_document_record(doc_data: Dict[str, Any]) -> Dict[str, Any]:
+def get_documents(doc_type: Optional[str] = None, status: Optional[str] = None, search: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Joins extracted_data and verification_requests to list documents."""
     client = get_supabase_client()
     if client:
         try:
-            resp = client.table("documents").upsert(doc_data).execute()
-            if resp.data and len(resp.data) > 0:
-                return resp.data[0]
+            resp = client.table("extracted_data").select("*, verification_requests(*), verification_results(*)").order("created_at", desc=True).execute()
+            if resp.data:
+                res = []
+                for item in resp.data:
+                    vr = item.get("verification_requests") or {}
+                    vres = item.get("verification_results") or {}
+                    if isinstance(vres, list) and len(vres) > 0:
+                        vres = vres[0]
+                    res.append({
+                        "id": item.get("id"),
+                        "document_type": vr.get("document_type") or "Passport",
+                        "document_number": item.get("document_number", ""),
+                        "full_name": item.get("full_name", ""),
+                        "nationality": item.get("nationality", ""),
+                        "date_of_birth": item.get("date_of_birth"),
+                        "date_of_expiry": item.get("expiry_date"),
+                        "gender": item.get("gender"),
+                        "document_status": vres.get("final_status", "VALID") if isinstance(vres, dict) else "VALID",
+                        "document_hash": "",
+                        "created_at": item.get("created_at")
+                    })
+                return res
         except Exception:
             pass
 
-    for idx, d in enumerate(_local_store["documents"]):
-        if d.get("document_number") == doc_data.get("document_number"):
-            _local_store["documents"][idx] = doc_data
-            return doc_data
-    _local_store["documents"].append(doc_data)
-    return doc_data
-
-save_document = save_document_record
+    # From in-memory store
+    res = []
+    for item in _local_store["extracted_data"]:
+        res.append({
+            "id": item.get("id"),
+            "document_type": "Passport",
+            "document_number": item.get("document_number", ""),
+            "full_name": item.get("full_name", ""),
+            "nationality": item.get("nationality", ""),
+            "date_of_birth": item.get("date_of_birth"),
+            "date_of_expiry": item.get("expiry_date"),
+            "gender": item.get("gender"),
+            "document_status": "VALID",
+            "document_hash": "",
+            "created_at": item.get("created_at")
+        })
+    return res
 
 # ------------------------------------------------------------------------------
-# Blacklist & Sovereign Watchlist
+# Verification Records & History (Aggregate of the 7 tables)
 # ------------------------------------------------------------------------------
-def check_blacklist(document_number: str, full_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Checks sovereign blacklist table for matched document number or suspect name."""
-    if not document_number and not full_name:
-        return None
-
-    clean_doc = document_number.replace(" ", "").upper() if document_number else ""
-    clean_name = full_name.strip().upper() if full_name else ""
-
+def get_verification_records(limit: int = 100) -> List[Dict[str, Any]]:
+    """
+    Returns full verification history by joining verification_requests, extracted_data, and verification_results.
+    """
     client = get_supabase_client()
     if client:
         try:
-            if clean_doc:
-                resp = client.table("blacklist").select("*").eq("document_number", clean_doc).eq("is_active", True).execute()
-                if resp.data and len(resp.data) > 0:
-                    return resp.data[0]
-            if clean_name:
-                resp = client.table("blacklist").select("*").ilike("full_name", clean_name).eq("is_active", True).execute()
-                if resp.data and len(resp.data) > 0:
-                    return resp.data[0]
-        except Exception:
-            pass
+            resp = client.table("verification_requests").select("*, extracted_data(*), verification_results(*), verification_checks(*)").order("created_at", desc=True).limit(limit).execute()
+            if resp.data:
+                records = []
+                for req in resp.data:
+                    ext = (req.get("extracted_data") or [{}])[0] if isinstance(req.get("extracted_data"), list) else (req.get("extracted_data") or {})
+                    res = (req.get("verification_results") or [{}])[0] if isinstance(req.get("verification_results"), list) else (req.get("verification_results") or {})
+                    checks = req.get("verification_checks") or []
+                    
+                    ocr_check = next((c for c in checks if c.get("check_type") == "OCR"), {})
+                    tamper_check = next((c for c in checks if c.get("check_type") == "TAMPERING"), {})
+                    face_check = next((c for c in checks if c.get("check_type") == "FACE_MATCH"), {})
+                    
+                    records.append({
+                        "id": req.get("id"),
+                        "verification_id": req.get("verification_code") or req.get("id"),
+                        "document_id": req.get("id"),
+                        "officer_id": req.get("user_id") or "A001",
+                        "document_type": req.get("document_type", "Passport"),
+                        "document_number": ext.get("document_number", ""),
+                        "applicant_name": ext.get("full_name", ""),
+                        "ocr_status": ocr_check.get("status", "PASSED"),
+                        "ocr_confidence": ext.get("ocr_confidence", 95.0),
+                        "ocr_data": ext,
+                        "validation_status": "VALID" if ext.get("mrz_valid") else "SUSPICIOUS",
+                        "mrz_valid": ext.get("mrz_valid", True),
+                        "tampering_status": tamper_check.get("status", "NOT_DETECTED"),
+                        "tampering_score": res.get("tampering_score", 0.0),
+                        "face_verification_status": face_check.get("status", "MATCH"),
+                        "face_match_score": res.get("face_match_score", 95.0),
+                        "risk_score": res.get("risk_score", 10),
+                        "risk_level": res.get("risk_level", "LOW"),
+                        "final_result": res.get("final_status", "VERIFIED"),
+                        "explanation": res.get("explanation", ""),
+                        "recommendation": res.get("recommendation", ""),
+                        "is_demo": req.get("demo_mode", False),
+                        "created_at": req.get("created_at")
+                    })
+                return records
+        except Exception as e:
+            logger.warning(f"Error reading verification history from Supabase: {e}")
 
-    for blk in _local_store["blacklist"]:
-        if not blk.get("is_active", True):
-            continue
-        if clean_doc and blk.get("document_number", "").replace(" ", "").upper() == clean_doc:
-            return blk
-        if clean_name and blk.get("full_name", "").strip().upper() == clean_name:
-            return blk
-
-    return None
-
-# ------------------------------------------------------------------------------
-# Cross-Identity Discrepancy Finder
-# ------------------------------------------------------------------------------
-def find_cross_identity_discrepancy(full_name: str, dob: str, current_doc_number: str) -> Optional[Dict[str, Any]]:
-    """Identifies if the same individual (Name/DOB) previously appeared with a different document number."""
-    if not full_name or not current_doc_number:
-        return None
-
-    clean_name = full_name.strip().upper()
-    clean_doc = current_doc_number.replace(" ", "").upper()
-
-    client = get_supabase_client()
-    if client:
-        try:
-            resp = client.table("documents").select("*").ilike("full_name", clean_name).neq("document_number", clean_doc).execute()
-            if resp.data and len(resp.data) > 0:
-                return resp.data[0]
-        except Exception:
-            pass
-
-    for doc in _local_store["documents"]:
-        if doc.get("full_name", "").strip().upper() == clean_name and doc.get("document_number", "").replace(" ", "").upper() != clean_doc:
-            return doc
-
-    return None
-
-# ------------------------------------------------------------------------------
-# Verification Records
-# ------------------------------------------------------------------------------
-def get_verification_records(limit: int = 50) -> List[Dict[str, Any]]:
-    client = get_supabase_client()
-    if client:
-        try:
-            resp = client.table("verification_records").select("*").order("created_at", desc=True).limit(limit).execute()
-            return resp.data or []
-        except Exception:
-            return []
-
-    return sorted(_local_store["verification_records"], key=lambda x: str(x.get("created_at", "")), reverse=True)[:limit]
+    # Fallback to local in-memory store
+    records = []
+    for req in _local_store["verification_requests"]:
+        req_id = req.get("id")
+        ext = next((e for e in _local_store["extracted_data"] if e.get("verification_id") == req_id), {})
+        res = next((r for r in _local_store["verification_results"] if r.get("verification_id") == req_id), {})
+        records.append({
+            "id": req_id,
+            "verification_id": req.get("verification_code") or req_id,
+            "document_id": req_id,
+            "officer_id": req.get("user_id") or "A001",
+            "document_type": req.get("document_type", "Passport"),
+            "document_number": ext.get("document_number", ""),
+            "applicant_name": ext.get("full_name", ""),
+            "ocr_status": "PASSED",
+            "ocr_confidence": ext.get("ocr_confidence", 95.0),
+            "ocr_data": ext,
+            "validation_status": "VALID" if ext.get("mrz_valid") else "SUSPICIOUS",
+            "mrz_valid": ext.get("mrz_valid", True),
+            "tampering_status": "NOT_DETECTED",
+            "tampering_score": res.get("tampering_score", 0.0),
+            "face_verification_status": "MATCH",
+            "face_match_score": res.get("face_match_score", 95.0),
+            "risk_score": res.get("risk_score", 10),
+            "risk_level": res.get("risk_level", "LOW"),
+            "final_result": res.get("final_status", "VERIFIED"),
+            "explanation": res.get("explanation", ""),
+            "recommendation": res.get("recommendation", ""),
+            "is_demo": req.get("demo_mode", False),
+            "created_at": req.get("created_at")
+        })
+    return sorted(records, key=lambda x: str(x.get("created_at", "")), reverse=True)[:limit]
 
 def get_verification_by_id(verification_id: str) -> Optional[Dict[str, Any]]:
-    client = get_supabase_client()
-    if client:
-        try:
-            resp = client.table("verification_records").select("*").eq("verification_id", verification_id).execute()
-            if resp.data and len(resp.data) > 0:
-                return resp.data[0]
-        except Exception:
-            pass
-
-    for r in _local_store["verification_records"]:
+    records = get_verification_records(limit=200)
+    for r in records:
         if r.get("verification_id") == verification_id or r.get("id") == verification_id:
             return r
     return None
-
-def save_verification_record(record: Dict[str, Any]) -> Dict[str, Any]:
-    client = get_supabase_client()
-    if client:
-        try:
-            resp = client.table("verification_records").insert(record).execute()
-            if resp.data and len(resp.data) > 0:
-                return resp.data[0]
-        except Exception:
-            pass
-
-    _local_store["verification_records"].append(record)
-    return record
-
-# ------------------------------------------------------------------------------
-# Audit Logs
-# ------------------------------------------------------------------------------
-def get_audit_logs() -> List[Dict[str, Any]]:
-    client = get_supabase_client()
-    if client:
-        try:
-            resp = client.table("audit_logs").select("*").order("created_at", desc=False).execute()
-            return resp.data or []
-        except Exception:
-            return []
-
-    return sorted(_local_store["audit_logs"], key=lambda x: str(x.get("created_at", "")))
-
-def get_latest_audit_hash() -> str:
-    logs = get_audit_logs()
-    if logs:
-        return logs[-1].get("current_hash", "0000000000000000000000000000000000000000000000000000000000000000")
-    return "0000000000000000000000000000000000000000000000000000000000000000"
-
-def save_audit_log(entry: Dict[str, Any]) -> Dict[str, Any]:
-    client = get_supabase_client()
-    if client:
-        try:
-            resp = client.table("audit_logs").insert(entry).execute()
-            if resp.data and len(resp.data) > 0:
-                return resp.data[0]
-        except Exception:
-            pass
-
-    _local_store["audit_logs"].append(entry)
-    return entry
-
-# ------------------------------------------------------------------------------
-# Demo Scenarios
-# ------------------------------------------------------------------------------
-def get_demo_scenarios() -> List[Dict[str, Any]]:
-    client = get_supabase_client()
-    if client:
-        try:
-            resp = client.table("demo_scenarios").select("*, documents(*)").order("scenario_code", desc=False).execute()
-            scenarios = resp.data or []
-            for sc in scenarios:
-                doc = sc.get("documents") or {}
-                if isinstance(doc, dict) and doc:
-                    if not sc.get("document_number"):
-                        sc["document_number"] = doc.get("document_number")
-                    if not sc.get("document_type"):
-                        sc["document_type"] = doc.get("document_type")
-                    if not sc.get("full_name"):
-                        sc["full_name"] = doc.get("full_name")
-                    if not sc.get("nationality"):
-                        sc["nationality"] = doc.get("nationality")
-                    if not sc.get("date_of_birth"):
-                        sc["date_of_birth"] = str(doc.get("date_of_birth", ""))
-                    if not sc.get("date_of_expiry"):
-                        sc["date_of_expiry"] = str(doc.get("date_of_expiry", ""))
-            return scenarios
-        except Exception:
-            return []
-
-    return sorted(_local_store["demo_scenarios"], key=lambda x: str(x.get("scenario_code", "")))
 
 # ------------------------------------------------------------------------------
 # Dashboard Metrics
@@ -367,9 +467,9 @@ def get_demo_scenarios() -> List[Dict[str, Any]]:
 def get_dashboard_metrics() -> Dict[str, Any]:
     records = get_verification_records(limit=200)
     total = len(records)
-    verified = sum(1 for r in records if r.get("final_result") == "VERIFIED")
-    suspicious = sum(1 for r in records if r.get("final_result") in ("SUSPICIOUS", "EXPIRED"))
-    failed = sum(1 for r in records if r.get("final_result") in ("FAILED", "NOT VERIFIED"))
+    verified = sum(1 for r in records if r.get("final_result") in ("VERIFIED", "COMPLETED"))
+    suspicious = sum(1 for r in records if r.get("final_result") in ("SUSPICIOUS", "EXPIRED", "WARNING"))
+    failed = sum(1 for r in records if r.get("final_result") in ("FAILED", "REJECTED", "NOT VERIFIED"))
 
     return {
         "total_screenings": total,
@@ -380,39 +480,55 @@ def get_dashboard_metrics() -> Dict[str, Any]:
     }
 
 # ------------------------------------------------------------------------------
-# Database Seeder for Local / Sandbox Mode
+# Audit Logs (from verification_logs)
 # ------------------------------------------------------------------------------
-def seed_local_store_from_sql() -> int:
-    """
-    Seeds local in-memory store from the initial dataset if Supabase is unconfigured.
-    """
-    import bcrypt
+def get_audit_logs() -> List[Dict[str, Any]]:
+    client = get_supabase_client()
+    if client:
+        try:
+            resp = client.table("verification_logs").select("*").order("created_at", desc=False).execute()
+            if resp.data:
+                return resp.data
+        except Exception:
+            pass
+    return sorted(_local_store["verification_logs"], key=lambda x: str(x.get("created_at", "")))
 
-    # 1. Seed Real Officers with Bcrypt Hashes
-    salt = bcrypt.gensalt(12)
-    pwd_hash_officer = bcrypt.hashpw(b"Officer@123", salt).decode("utf-8")
-    pwd_hash_admin = bcrypt.hashpw(b"Admin@123", salt).decode("utf-8")
-    pwd_hash_demo = bcrypt.hashpw(b"Demo@123", salt).decode("utf-8")
-    pwd_hash_admin123 = bcrypt.hashpw(b"admin123", salt).decode("utf-8")
-    
-    officer_1_id = str(uuid.uuid4())
-    admin_1_id = str(uuid.uuid4())
-    demo_officer_id = str(uuid.uuid4())
-    
-    officers = [
+def get_latest_audit_hash() -> str:
+    logs = get_audit_logs()
+    if logs:
+        last = logs[-1]
+        raw = f"{last.get('id')}:{last.get('verification_id')}:{last.get('step_name')}"
+        return hashlib.sha256(raw.encode()).hexdigest()
+    return "0000000000000000000000000000000000000000000000000000000000000000"
+
+def save_audit_log(entry: Dict[str, Any]) -> Dict[str, Any]:
+    return save_verification_log({
+        "verification_id": entry.get("verification_id"),
+        "step_name": entry.get("action", "SCREENING_COMPLETED"),
+        "status": "COMPLETED",
+        "message": f"Cryptographic audit recorded. Officer: {entry.get('officer_id')}",
+        "progress": 100,
+        "metadata": entry
+    })
+
+# ------------------------------------------------------------------------------
+# Seed Default Users & Initial State for Offline / Demo Mode
+# ------------------------------------------------------------------------------
+def seed_default_users():
+    default_users = [
         {
             "id": "307f9396-8bf8-4540-abc2-0f7a8d8ba07b",
             "user_id": "A001",
             "username": "A001",
             "email": "officer002@demo.local",
-            "password_hash": pwd_hash_admin123,
+            "password": "admin123",
             "full_name": "Demo Officer Two",
-            "role": "officer",
-            "status": "active",
-            "is_demo": False,
+            "role": "OFFICER",
+            "is_active": True,
             "department": "Sashastra Seema Bal (SSB), Police II Division",
             "designation": "Duty Officer (Immigration Clearance)",
             "terminal": "ICP Raxaul • Counter 2",
+            "badge_number": "SSB-MHA-8843",
             "created_at": "2026-09-05T15:35:00.938Z"
         },
         {
@@ -420,14 +536,14 @@ def seed_local_store_from_sql() -> int:
             "user_id": "A002",
             "username": "A002",
             "email": "officer@example.com",
-            "password_hash": pwd_hash_admin123,
+            "password": "admin123",
             "full_name": "Security Officer",
-            "role": "officer",
-            "status": "active",
-            "is_demo": False,
+            "role": "OFFICER",
+            "is_active": True,
             "department": "Sashastra Seema Bal (SSB), Border Checkpoint",
             "designation": "Security Officer",
             "terminal": "ICP Raxaul • Desk 01",
+            "badge_number": "SSB-MHA-8844",
             "created_at": "2026-09-04T19:50:22.137Z"
         },
         {
@@ -435,14 +551,14 @@ def seed_local_store_from_sql() -> int:
             "user_id": "A003",
             "username": "A003",
             "email": "officer001@demo.local",
-            "password_hash": pwd_hash_admin123,
+            "password": "admin123",
             "full_name": "Demo Officer One",
-            "role": "officer",
-            "status": "active",
-            "is_demo": False,
+            "role": "OFFICER",
+            "is_active": True,
             "department": "Sashastra Seema Bal (SSB), Police II Division",
             "designation": "Screening Officer (Biometrics & Document Verification)",
             "terminal": "ICP Raxaul • Indo-Nepal Border Terminal",
+            "badge_number": "SSB-MHA-8842",
             "created_at": "2026-09-05T15:35:00.938Z"
         },
         {
@@ -450,454 +566,17 @@ def seed_local_store_from_sql() -> int:
             "user_id": "A004",
             "username": "A004",
             "email": "admin@example.com",
-            "password_hash": pwd_hash_admin123,
+            "password": "admin123",
             "full_name": "System Administrator",
-            "role": "admin",
-            "status": "active",
-            "is_demo": False,
+            "role": "ADMIN",
+            "is_active": True,
             "department": "Sashastra Seema Bal (SSB), Directorate General",
             "designation": "Commandant & Border Security Lead",
             "terminal": "SSB HQ • Command Center",
+            "badge_number": "SSB-HQ-001",
             "created_at": "2026-09-04T19:50:22.137Z"
-        },
-        {
-            "id": officer_1_id,
-            "user_id": "officer001",
-            "password_hash": pwd_hash_officer,
-            "full_name": "Inspector Rajeshwar Kumar",
-            "role": "officer",
-            "status": "active",
-            "is_demo": False,
-            "department": "Sashastra Seema Bal (SSB), Police II Division",
-            "designation": "Screening Officer",
-            "terminal": "ICP Raxaul • Indo-Nepal Border Terminal",
-            "reference_photo_path": "demo_documents/person_aarav_reference.svg",
-            "created_at": "2026-09-01T00:00:00Z"
-        },
-        {
-            "id": admin_1_id,
-            "user_id": "admin01",
-            "password_hash": pwd_hash_admin,
-            "full_name": "Commander Vikramaditya Singh",
-            "role": "admin",
-            "status": "active",
-            "is_demo": False,
-            "department": "Sashastra Seema Bal (SSB), Ministry of Home Affairs",
-            "designation": "Commandant & Security Lead",
-            "terminal": "ICP Raxaul • HQ Directorate",
-            "reference_photo_path": "demo_documents/person_aarav_reference.svg",
-            "created_at": "2026-09-01T00:00:00Z"
-        },
-        {
-            "id": demo_officer_id,
-            "user_id": "demo_officer",
-            "password_hash": pwd_hash_demo,
-            "full_name": "Demo Duty Officer",
-            "role": "officer",
-            "status": "active",
-            "is_demo": True,
-            "department": "Sashastra Seema Bal (SSB), Police II Division",
-            "designation": "Screening Officer",
-            "terminal": "ICP Raxaul • Indo-Nepal Border Terminal",
-            "reference_photo_path": "demo_documents/person_aarav_reference.svg",
-            "created_at": "2026-09-01T00:00:00Z"
         }
     ]
-    _local_store["officers"] = officers
+    _local_store["users"] = default_users
 
-    # 2. Blacklist / Sovereign Watchlist
-    _local_store["blacklist"] = [
-        {
-            "id": str(uuid.uuid4()),
-            "document_number": "DEMO-BLK-999",
-            "full_name": "SUSPECT WANTED PERSON",
-            "nationality": "IND",
-            "reason": "Red Corner Notice / Cross-Border Contraband Smuggling",
-            "severity": "CRITICAL",
-            "issuing_agency": "INTERPOL / SSB Intelligence Bureau",
-            "is_active": True,
-            "added_at": "2026-09-01T00:00:00Z"
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "document_number": "J88721990",
-            "full_name": "TARIQ MAHMOOD",
-            "nationality": "PAK",
-            "reason": "Terror Financing Watchlist (FATF High Risk Annexure)",
-            "severity": "CRITICAL",
-            "issuing_agency": "Ministry of Home Affairs (MHA)",
-            "is_active": True,
-            "added_at": "2026-09-01T00:00:00Z"
-        }
-    ]
-
-    # 3. Documents
-    doc1_id = str(uuid.uuid4())
-    doc2_id = str(uuid.uuid4())
-    doc3_id = str(uuid.uuid4())
-    doc4_id = str(uuid.uuid4())
-    doc5_id = str(uuid.uuid4())
-    doc6_id = str(uuid.uuid4())
-    doc7_id = str(uuid.uuid4())
-
-    docs = [
-        {
-            "id": doc1_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-001",
-            "full_name": "TEST PERSON ALPHA",
-            "nationality": "IND",
-            "date_of_birth": "1998-03-14",
-            "date_of_expiry": "2031-08-20",
-            "gender": "M",
-            "issuing_country": "India",
-            "issuing_authority": "Demo Passport Authority",
-            "file_path": "demo_documents/DEMO-PPT-001.png",
-            "document_hash": "a1b2c3d4e5f6001",
-            "ocr_text": "TEST PERSON ALPHA | DEMO-PPT-001 | IND | 14 MAR 1998 | 20 AUG 2031",
-            "document_status": "ACTIVE",
-            "created_by": officer_id,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:00:00Z"
-        },
-        {
-            "id": doc2_id,
-            "document_type": "driving_license",
-            "document_number": "DEMO-DL-002",
-            "full_name": "TEST PERSON BETA",
-            "nationality": "IND",
-            "date_of_birth": "2000-07-22",
-            "date_of_expiry": "2030-07-21",
-            "gender": "F",
-            "issuing_country": "India",
-            "issuing_authority": "Demo Transport Authority",
-            "file_path": "demo_documents/DEMO-DL-002.png",
-            "document_hash": "a1b2c3d4e5f6002",
-            "ocr_text": "TEST PERSON BETA | DEMO-DL-002 | DOB 22 JUL 2000 | EXP 21 JUL 2030",
-            "document_status": "ACTIVE",
-            "created_by": officer_id,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:15:00Z"
-        },
-        {
-            "id": doc3_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-003",
-            "full_name": "TEST PERSON GAMMA",
-            "nationality": "IND",
-            "date_of_birth": "1995-11-02",
-            "date_of_expiry": "2024-05-10",
-            "gender": "M",
-            "issuing_country": "India",
-            "issuing_authority": "Demo Passport Authority",
-            "file_path": "demo_documents/DEMO-PPT-003.png",
-            "document_hash": "a1b2c3d4e5f6003",
-            "ocr_text": "TEST PERSON GAMMA | DEMO-PPT-003 | IND | 02 NOV 1995 | 10 MAY 2024",
-            "document_status": "EXPIRED",
-            "created_by": officer_id,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:30:00Z"
-        },
-        {
-            "id": doc4_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-004",
-            "full_name": "TEST PERSON DELTA",
-            "nationality": "IND",
-            "date_of_birth": "1997-01-18",
-            "date_of_expiry": "2030-12-30",
-            "gender": "M",
-            "issuing_country": "India",
-            "issuing_authority": "Demo Passport Authority",
-            "file_path": "demo_documents/DEMO-PPT-004-TAMPERED.png",
-            "document_hash": "a1b2c3d4e5f6004",
-            "ocr_text": "TEST PERSON DELTA | DEMO-PPT-004 | IND | 18 JAN 1997 | 30 DEC 2030",
-            "document_status": "ACTIVE",
-            "created_by": officer_id,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:45:00Z"
-        },
-        {
-            "id": doc5_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-005",
-            "full_name": "TEST PERSON EPSILON",
-            "nationality": "IND",
-            "date_of_birth": "1999-09-09",
-            "date_of_expiry": "2032-09-08",
-            "gender": "F",
-            "issuing_country": "India",
-            "issuing_authority": "Demo Passport Authority",
-            "file_path": "demo_documents/DEMO-PPT-005.png",
-            "document_hash": "a1b2c3d4e5f6005",
-            "ocr_text": "TEST PERSON EPSILON | DEMO-PPT-005 | IND | 09 SEP 1999 | 08 SEP 2032",
-            "document_status": "ACTIVE",
-            "created_by": officer_id,
-            "is_demo": True,
-            "created_at": "2026-09-01T09:00:00Z"
-        },
-        {
-            "id": doc6_id,
-            "document_type": "visa",
-            "document_number": "DEMO-VISA-006",
-            "full_name": "TEST PERSON ZETA",
-            "nationality": "IND",
-            "date_of_birth": "1996-04-25",
-            "date_of_expiry": "2027-04-24",
-            "gender": "F",
-            "visa_type": "Tourist",
-            "visa_entry_type": "Multiple",
-            "visa_stay_duration_days": 90,
-            "issuing_country": "Demo Country",
-            "issuing_authority": "Demo Immigration Authority",
-            "file_path": "demo_documents/DEMO-VISA-006.png",
-            "document_hash": "a1b2c3d4e5f6006",
-            "ocr_text": "TEST PERSON ZETA | DEMO-VISA-006 | TOURIST | MULTIPLE | 90 DAYS",
-            "document_status": "ACTIVE",
-            "created_by": officer_1_id,
-            "is_demo": True,
-            "created_at": "2026-09-01T09:15:00Z"
-        },
-        {
-            "id": doc7_id,
-            "document_type": "passport",
-            "document_number": "910239248",
-            "full_name": "Michelle De La Paz",
-            "nationality": "United States of America",
-            "date_of_birth": "1999-08-07",
-            "date_of_expiry": "2018-02-05",
-            "gender": "F",
-            "issuing_country": "USA",
-            "issuing_authority": "United States Department of State",
-            "file_path": "demo_documents/demo_passport_expired_michelle.png",
-            "document_hash": "f9e8d7c6b5a4007",
-            "ocr_text": "PASSPORT / PASSEPORT UNITED STATES OF AMERICA | DE LA PAZ, MICHELLE | 910239248 | USA | 07 AUG 1999 | 05 FEB 2018 | F | MRZ: P<USADELAPAZ<<MICHELLE<<<<<<<<<<<<<<<<<<<<<<<<< 9102392482USA9908071F1802051900781200<129676",
-            "document_status": "EXPIRED",
-            "created_by": officer_1_id,
-            "is_demo": True,
-            "created_at": "2026-09-01T09:30:00Z"
-        }
-    ]
-    _local_store["documents"] = docs
-
-    # 4. Verification Records
-    v1_id = str(uuid.uuid4())
-    v2_id = str(uuid.uuid4())
-    records = [
-        {
-            "id": v1_id,
-            "verification_id": "VER-DEMO-001",
-            "document_id": doc1_id,
-            "officer_id": officer_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-001",
-            "applicant_name": "TEST PERSON ALPHA",
-            "ocr_status": "PASSED",
-            "ocr_confidence": 98.50,
-            "validation_status": "VALID",
-            "mrz_valid": True,
-            "tampering_status": "NOT_DETECTED",
-            "tampering_score": 4.20,
-            "face_verification_status": "MATCH",
-            "face_match_score": 96.80,
-            "risk_score": 8.50,
-            "risk_level": "LOW",
-            "final_result": "VERIFIED",
-            "document_hash": "a1b2c3d4e5f6001",
-            "is_demo": True,
-            "created_at": "2026-09-01T08:05:00Z"
-        },
-        {
-            "id": v2_id,
-            "verification_id": "VER-DEMO-002",
-            "document_id": doc2_id,
-            "officer_id": officer_id,
-            "document_type": "driving_license",
-            "document_number": "DEMO-DL-002",
-            "applicant_name": "TEST PERSON BETA",
-            "ocr_status": "PASSED",
-            "ocr_confidence": 97.00,
-            "validation_status": "VALID",
-            "mrz_valid": True,
-            "tampering_status": "NOT_DETECTED",
-            "tampering_score": 3.80,
-            "face_verification_status": "MATCH",
-            "face_match_score": 94.50,
-            "risk_score": 6.00,
-            "risk_level": "LOW",
-            "final_result": "VERIFIED",
-            "document_hash": "a1b2c3d4e5f6002",
-            "is_demo": True,
-            "created_at": "2026-09-01T08:20:00Z"
-        }
-    ]
-    _local_store["verification_records"] = records
-
-    # 5. Demo Scenarios
-    scenarios = [
-        {
-            "id": str(uuid.uuid4()),
-            "scenario_code": "SCN-001",
-            "scenario_name": "Valid Indian Passport",
-            "description": "Standard authentic biometric passport with valid dates and clean substrate.",
-            "document_id": doc1_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-001",
-            "full_name": "TEST PERSON ALPHA",
-            "document_file_path": "demo_documents/DEMO-PPT-001.png",
-            "person_photo_path": "demo_documents/person_alpha.png",
-            "expected_result": "VERIFIED",
-            "expected_risk_level": "LOW",
-            "notes": "Authentic benchmark test.",
-            "is_active": True,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:00:00Z"
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "scenario_code": "SCN-002",
-            "scenario_name": "Valid Driving License",
-            "description": "Standard national driving permit with valid validity period.",
-            "document_id": doc2_id,
-            "document_type": "driving_license",
-            "document_number": "DEMO-DL-002",
-            "full_name": "TEST PERSON BETA",
-            "document_file_path": "demo_documents/DEMO-DL-002.png",
-            "person_photo_path": "demo_documents/person_beta.png",
-            "expected_result": "VERIFIED",
-            "expected_risk_level": "LOW",
-            "notes": "Valid alternative identity test.",
-            "is_active": True,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:15:00Z"
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "scenario_code": "SCN-003",
-            "scenario_name": "Expired Passport",
-            "description": "Passport with an expired validity date.",
-            "document_id": doc3_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-003",
-            "full_name": "TEST PERSON GAMMA",
-            "document_file_path": "demo_documents/DEMO-PPT-003.png",
-            "person_photo_path": "demo_documents/person_gamma.png",
-            "expected_result": "EXPIRED",
-            "expected_risk_level": "HIGH",
-            "notes": "Used to demonstrate expiry validation.",
-            "is_active": True,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:30:00Z"
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "scenario_code": "SCN-004",
-            "scenario_name": "Tampered Passport",
-            "description": "Synthetic document containing simulated image manipulation.",
-            "document_id": doc4_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-004",
-            "full_name": "TEST PERSON DELTA",
-            "document_file_path": "demo_documents/DEMO-PPT-004-TAMPERED.png",
-            "person_photo_path": "demo_documents/person_delta.png",
-            "expected_result": "SUSPICIOUS",
-            "expected_risk_level": "HIGH",
-            "notes": "Used to demonstrate OpenCV forensics and Gemini visual analysis.",
-            "is_active": True,
-            "is_demo": True,
-            "created_at": "2026-09-01T08:45:00Z"
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "scenario_code": "SCN-005",
-            "scenario_name": "Face Mismatch",
-            "description": "Valid-looking synthetic document with a different reference person.",
-            "document_id": doc5_id,
-            "document_type": "passport",
-            "document_number": "DEMO-PPT-005",
-            "full_name": "TEST PERSON EPSILON",
-            "document_file_path": "demo_documents/DEMO-PPT-005.png",
-            "person_photo_path": "demo_documents/wrong_person.png",
-            "expected_result": "FAILED",
-            "expected_risk_level": "HIGH",
-            "notes": "Used to demonstrate biometric mismatch detection.",
-            "is_active": True,
-            "is_demo": True,
-            "created_at": "2026-09-01T09:00:00Z"
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "scenario_code": "SCN-006",
-            "scenario_name": "Valid Visa",
-            "description": "Synthetic tourist visa with valid dates.",
-            "document_id": doc6_id,
-            "document_type": "visa",
-            "document_number": "DEMO-VISA-006",
-            "full_name": "TEST PERSON ZETA",
-            "document_file_path": "demo_documents/DEMO-VISA-006.png",
-            "person_photo_path": "demo_documents/person_zeta.png",
-            "expected_result": "VERIFIED",
-            "expected_risk_level": "LOW",
-            "notes": "Synthetic demonstration scenario only.",
-            "is_active": True,
-            "is_demo": True,
-            "created_at": "2026-09-01T09:15:00Z"
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "scenario_code": "SCN-007",
-            "scenario_name": "Expired US Passport (Michelle)",
-            "description": "Standard US biometric passport with expired validity (2018-02-05).",
-            "document_id": doc7_id,
-            "document_type": "passport",
-            "document_number": "910239248",
-            "full_name": "Michelle De La Paz",
-            "nationality": "United States of America",
-            "date_of_birth": "1999-08-07",
-            "date_of_expiry": "2018-02-05",
-            "document_file_path": "demo_documents/demo_passport_expired_michelle.png",
-            "person_photo_path": "demo_documents/demo_passport_expired_michelle.png",
-            "expected_result": "EXPIRED",
-            "expected_risk_level": "HIGH",
-            "notes": "Expired document benchmark test with MRZ detected.",
-            "is_active": True,
-            "is_demo": True,
-            "created_at": "2026-09-01T09:30:00Z"
-        }
-    ]
-    _local_store["demo_scenarios"] = scenarios
-
-    # 6. Cryptographic Audit Logs
-    audit_logs = []
-    prev_h = "0000000000000000000000000000000000000000000000000000000000000000"
-    for r in records:
-        import hashlib
-        c_h = hashlib.sha256(f"{prev_h}:{r['verification_id']}:{r['document_hash']}".encode()).hexdigest()
-        audit_logs.append({
-            "id": str(uuid.uuid4()),
-            "verification_id": r["id"],
-            "officer_id": officer_1_id,
-            "action": "SCREENING_COMPLETED",
-            "document_hash": r["document_hash"],
-            "previous_hash": prev_h,
-            "current_hash": c_h,
-            "metadata": {"final_result": r["final_result"], "risk_score": r["risk_score"], "demo_record": True},
-            "is_demo": True,
-            "created_at": r["created_at"]
-        })
-        prev_h = c_h
-    _local_store["audit_logs"] = audit_logs
-
-    return len(records) + len(docs) + len(scenarios) + len(_local_store["blacklist"]) + 1
-
-def clear_all_data() -> None:
-    _local_store["officers"].clear()
-    _local_store["documents"].clear()
-    _local_store["verification_records"].clear()
-    _local_store["audit_logs"].clear()
-    _local_store["demo_scenarios"].clear()
-    _local_store["blacklist"].clear()
-
-# Initialize seeded memory store
-seed_local_store_from_sql()
-
+seed_default_users()

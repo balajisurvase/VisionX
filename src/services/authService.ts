@@ -1,4 +1,5 @@
 import { OfficerUser, AuthState } from '../types/auth';
+import { API_ENDPOINTS } from '../config/api';
 
 const AUTH_STORAGE_KEY = 'SSB_OFFICER_AUTH_SESSION';
 const AUTH_TOKEN_KEY = 'SSB_OFFICER_JWT_TOKEN';
@@ -152,7 +153,7 @@ export async function loginWithUserId(
 
   // 1. Authenticate via Express / FastAPI backend /api/auth/login against database
   try {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(API_ENDPOINTS.auth.login, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: cleanUserId, password: cleanPassword }),
