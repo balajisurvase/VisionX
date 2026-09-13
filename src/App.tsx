@@ -22,18 +22,12 @@ export function App() {
   const [activeDemoScenario, setActiveDemoScenario] = useState<DemoScenario | null>(null);
   const [inspectedRecord, setInspectedRecord] = useState<VerificationRecord | null>(null);
 
-  // Check auth session on startup
+  // Automatically logout on page reload / fresh startup per security requirements
   useEffect(() => {
-    const session = getCurrentSession();
-    if (session.isAuthenticated && session.user) {
-      setUser(session.user);
-      setIsAuthenticated(true);
-      setCurrentPath('/dashboard');
-    } else {
-      setIsAuthenticated(false);
-      setUser(null);
-      setCurrentPath('/login');
-    }
+    logoutUser();
+    setIsAuthenticated(false);
+    setUser(null);
+    setCurrentPath('/login');
   }, []);
 
   const handleLoginSuccess = (officer: OfficerUser) => {
