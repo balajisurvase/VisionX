@@ -25,6 +25,7 @@ import {
   normalizeIsoDate,
   calculateIcaoCheckDigit,
 } from './src/utils/mrzUtils';
+import { executeVerificationPipeline } from './verificationEngine';
 
 dotenv.config();
 
@@ -1383,6 +1384,28 @@ app.post(
           details: 'Uploaded payload contained no document file buffer.'
         });
       }
+
+      const result = await executeVerificationPipeline({
+        docBuffer: docFile.buffer,
+        docOriginalName: docFile.originalname || 'document.jpg',
+        docMimeType: docFile.mimetype || 'image/jpeg',
+        docSize: docFile.size || docFile.buffer.length,
+        personBuffer: personFile?.buffer || null,
+        personOriginalName: personFile?.originalname || null,
+        personMimeType: personFile?.mimetype || null,
+        documentType: docType,
+        officerId,
+      });
+
+      appendAuditLog(
+        result.verificationId,
+        officerId,
+        result.document_hash,
+        'VERIFICATION_COMPLETED',
+        { final_result: result.status, risk_score: result.risk_score }
+      );
+
+      return res.json(result);
 
       // Compute SHA-256 hash of the uploaded document
       const docHash = crypto.createHash('sha256').update(docFile.buffer).digest('hex');

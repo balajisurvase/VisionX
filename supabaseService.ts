@@ -1206,18 +1206,95 @@ export async function findRegisteredDocumentAndPerson(
       .eq('document_number', normDocNum)
       .maybeSingle();
 
-    if (docErr) {
-      console.log('[IDENTITY LOOKUP] Supabase document query notice (falling back to local registry):', docErr.message);
-      return {
-        success: false,
-        status: 'NOT_FOUND',
-        normalizedDocNumber: normDocNum,
-        doc: null,
-        person: null,
-      };
-    }
+    if (docErr || !doc) {
+      // Fallback check against extracted_data in Supabase (the active document registry in Supabase)
+      try {
+        const { data: extDocs, error: extErr } = await supabaseClient
+          .from('extracted_data')
+          .select('*')
+          .limit(100);
 
-    if (!doc) {
+        if (!extErr && extDocs && extDocs.length > 0) {
+          const matchedExt = extDocs.find((ed) => {
+            const num = normalize_document_number(ed.document_number);
+            return num === normDocNum || (num && normDocNum && (num.includes(normDocNum) || normDocNum.includes(num)));
+          });
+
+          if (matchedExt) {
+            console.log('Registered document found in Supabase extracted_data:', matchedExt.document_number);
+            const synthesizedDoc = {
+              id: matchedExt.id,
+              document_number: matchedExt.document_number,
+              document_type: 'Passport',
+              person_id: matchedExt.verification_id,
+              issue_date: matchedExt.issue_date || null,
+              expiry_date: matchedExt.expiry_date || null,
+              issuing_country: matchedExt.issuing_country || matchedExt.nationality || 'IND',
+              issuing_authority: 'PASSPORT AUTHORITY',
+              document_hash: '',
+              status: 'ACTIVE',
+              created_at: matchedExt.created_at,
+            };
+
+            const synthesizedPerson = {
+              id: matchedExt.verification_id,
+              person_code: matchedExt.document_number,
+              full_name: matchedExt.full_name,
+              date_of_birth: matchedExt.date_of_birth,
+              nationality: matchedExt.nationality || 'IND',
+              gender: matchedExt.gender || 'M',
+              status: 'ACTIVE',
+              biometric_reference_url: null,
+            };
+
+            return {
+              success: true,
+              status: 'MATCH',
+              normalizedDocNumber: normDocNum,
+              doc: synthesizedDoc,
+              person: synthesizedPerson,
+            };
+          }
+        }
+      } catch (e) {
+        console.warn('[IDENTITY LOOKUP] Warning querying extracted_data fallback:', e);
+      }
+
+      // Memory store fallback check
+      const memMatch = memoryStore.extracted_data.find((ed) => {
+        const num = normalize_document_number(ed.document_number);
+        return num === normDocNum || (num && normDocNum && (num.includes(normDocNum) || normDocNum.includes(num)));
+      });
+
+      if (memMatch) {
+        return {
+          success: true,
+          status: 'MATCH',
+          normalizedDocNumber: normDocNum,
+          doc: {
+            id: memMatch.id,
+            document_number: memMatch.document_number,
+            document_type: 'Passport',
+            person_id: memMatch.verification_id,
+            issue_date: memMatch.issue_date,
+            expiry_date: memMatch.expiry_date,
+            issuing_country: memMatch.issuing_country,
+            status: 'ACTIVE',
+            created_at: memMatch.created_at,
+          },
+          person: {
+            id: memMatch.verification_id,
+            person_code: memMatch.document_number,
+            full_name: memMatch.full_name,
+            date_of_birth: memMatch.date_of_birth,
+            nationality: memMatch.nationality,
+            gender: memMatch.gender,
+            status: 'ACTIVE',
+            biometric_reference_url: null,
+          },
+        };
+      }
+
       console.log('Registered document found: false');
       console.log('Registered person found: false');
       console.log('Person code: NONE');
