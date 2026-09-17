@@ -56,6 +56,14 @@ async function fetchJson<T>(url: string, options?: RequestInit, contextDesc = 'A
           } catch {
             // use fallback errorDetail
           }
+        } else if (text && text.trim().startsWith('<')) {
+          const match = text.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i) || text.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || text.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+          if (match && match[1]) {
+            const cleanText = match[1].replace(/<[^>]+>/g, '').trim();
+            if (cleanText) {
+              errorDetail = `Server Error (${res.status}): ${cleanText.slice(0, 150)}`;
+            }
+          }
         }
 
         if (stage) {
@@ -268,153 +276,6 @@ async function computeClientFileHash(file: File): Promise<string> {
   }
 }
 
-async function clientSideFallbackScreening(
-  file: File,
-  personPhoto?: File | null,
-  documentType: DocumentType = 'Passport',
-  officerId: string = 'officer001'
-): Promise<VerificationRecord> {
-  const verId = `VER-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  const docHash = await computeClientFileHash(file);
-  
-  // Create safe blob/object URLs for rendering in the UI
-  let docPreviewUrl = '';
-  let personPreviewUrl = '';
-  try {
-    docPreviewUrl = URL.createObjectURL(file);
-    if (personPhoto) {
-      personPreviewUrl = URL.createObjectURL(personPhoto);
-    }
-  } catch {
-    docPreviewUrl = `/api/verifications/${verId}/image/passport`;
-    personPreviewUrl = `/api/verifications/${verId}/image/person`;
-  }
-
-  // Derive sensible details from file name or standard authentic credentials
-  const cleanBaseName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').trim().toUpperCase();
-  let applicantName = cleanBaseName.length >= 3 && !cleanBaseName.includes('DOCUMENT') && !cleanBaseName.includes('PASSPORT') && !cleanBaseName.includes('IMAGE')
-    ? cleanBaseName
-    : 'BALAJI RAVINDRA SURVASE';
-  
-  let docNumber = 'L89230419';
-  const numMatch = file.name.match(/[A-Z0-9]{7,10}/i);
-  if (numMatch) {
-    docNumber = numMatch[0].toUpperCase();
-  }
-
-  const nationality = 'IND';
-  const dob = '1996-08-15';
-  const expiry = '2032-08-14';
-  const finalStatus = 'AUTHENTIC';
-  const riskScore = 5.2;
-  const faceScore = personPhoto ? 97.4 : 96.0;
-
-  const mrzLine1 = `P<${nationality}${applicantName.replace(/\s+/g, '<')}<<<<<<<<<<<<<<<<<<<`.slice(0, 44);
-  const mrzLine2 = `${docNumber.padEnd(9, '<')}8${nationality}9608154M3208148<<<<<<<<<<<<<<02`.slice(0, 44);
-
-  return {
-    id: Date.now(),
-    verification_id: verId,
-    applicant_name: applicantName,
-    document_type: documentType,
-    document_number: docNumber,
-    date_of_birth: dob,
-    date_of_expiry: expiry,
-    nationality: nationality,
-    verification_status: 'AUTHENTIC',
-    risk_score: riskScore,
-    risk_level: 'LOW',
-    ocr_status: 'PASSED',
-    validation_status: 'PASSED',
-    tampering_status: 'PASSED',
-    face_match_status: 'PASSED',
-    document_status: 'VALID',
-    verified_by: officerId,
-    created_at: new Date().toISOString(),
-    document_hash: docHash,
-    notes: 'Document Cleared to Proceed: Document appears consistent with implemented verification checks.',
-    reasons: ['Document Cleared to Proceed: Document appears consistent with implemented verification checks.'],
-    uploaded_document: {
-      signed_url: docPreviewUrl,
-      path: `verifications/${verId}/uploaded-passport.jpg`,
-    },
-    document_detection: {
-      detected: true,
-      type: documentType,
-      confidence: 0.98,
-      bounding_box: { x: 0.02, y: 0.02, width: 0.96, height: 0.96 },
-      image_quality: 98,
-    },
-    uploaded_portrait: {
-      detected: true,
-      signed_url: docPreviewUrl,
-      path: `verifications/${verId}/uploaded-passport-portrait.jpg`,
-      bounding_box: { x: 50, y: 120, width: 280, height: 350 },
-    },
-    registered_biometric: {
-      signed_url: personPreviewUrl || docPreviewUrl,
-      available: true,
-      path: `verifications/${verId}/uploaded-person.jpg`,
-    },
-    biometric: {
-      uploaded_face_detected: true,
-      reference_face_detected: true,
-      similarity: faceScore / 100,
-      threshold: 0.70,
-      match: true,
-    },
-    mrz_info: {
-      detected: true,
-      checksum_valid: true,
-      line_1: mrzLine1,
-      line_2: mrzLine2,
-      crop_url: docPreviewUrl,
-    },
-    explanation: 'Document Cleared to Proceed: Document appears consistent with implemented verification checks.',
-    ocr_data: {
-      full_name: applicantName,
-      document_number: docNumber,
-      nationality: nationality,
-      date_of_birth: dob,
-      date_of_expiry: expiry,
-      gender: 'M',
-      mrz_line_1: mrzLine1,
-      mrz_line_2: mrzLine2,
-      mrz_valid: true,
-      confidence_score: 98.5,
-    },
-    validation_details: {
-      format_valid: true,
-      required_fields_present: true,
-      date_format_valid: true,
-      mrz_checksum_valid: true,
-      document_not_expired: true,
-      consistency_checked: true,
-      verdict: 'VALID',
-      failure_reasons: [],
-    },
-    tampering_details: {
-      photo_replacement_status: 'NO_ISSUE',
-      text_manipulation_status: 'NO_ISSUE',
-      stamp_analysis_status: 'NO_ISSUE',
-      metadata_analysis_status: 'NO_ISSUE',
-      tampering_probability: 0,
-      verdict: 'DOCUMENT APPEARS AUTHENTIC',
-      detected_anomalies: [],
-    },
-    face_details: {
-      document_face_url: docPreviewUrl,
-      presented_face_url: personPreviewUrl || docPreviewUrl,
-      match_score: faceScore,
-      face_detected: true,
-      liveness_passed: true,
-      verdict: 'FACE MATCH',
-      confidence_metric: `1:1 Biometric Cosine Match: ${faceScore}%`,
-    },
-    database_match: undefined,
-  };
-}
-
 export async function screenDocument(
   file: File,
   personPhoto?: File | null,
@@ -429,22 +290,17 @@ export async function screenDocument(
   formData.append('document_type', documentType);
   formData.append('officer_id', officerId);
 
-  try {
-    const result = await fetchJson<any>(
-      API_ENDPOINTS.verify,
-      {
-        method: 'POST',
-        body: formData,
-      },
-      'document screening',
-      1
-    );
+  const result = await fetchJson<any>(
+    API_ENDPOINTS.verify,
+    {
+      method: 'POST',
+      body: formData,
+    },
+    'document screening',
+    1
+  );
 
-    return mapApiScreeningResultToRecord(result, file.name);
-  } catch (netErr: any) {
-    console.warn('[screenDocument] Backend verification request encountered issue, using integrated client forensic fallback:', netErr);
-    return await clientSideFallbackScreening(file, personPhoto, documentType, officerId);
-  }
+  return mapApiScreeningResultToRecord(result, file.name);
 }
 
 export const verifyDocument = screenDocument;

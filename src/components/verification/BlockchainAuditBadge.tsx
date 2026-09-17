@@ -39,15 +39,15 @@ export const BlockchainAuditBadge: React.FC<BlockchainAuditBadgeProps> = ({ reco
   };
 
   return (
-    <div className="bg-white rounded-[12px] border border-gray-100 p-6 shadow-2xs space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <Lock className="w-5 h-5 text-[#16A34A]" />
+          <Lock className="w-5 h-5 text-emerald-600" />
           <div>
-            <h3 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Cryptographic Blockchain Audit Block & Chain of Custody
             </h3>
-            <span className="text-[11px] text-gray-500 font-medium">
+            <span className="text-[11px] text-slate-500 font-medium">
               Tamper-Evident SHA-256 Ledger Record with Digital Officer Attestation
             </span>
           </div>
@@ -56,16 +56,16 @@ export const BlockchainAuditBadge: React.FC<BlockchainAuditBadgeProps> = ({ reco
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportJson}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#F5F6F8] hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer flex items-center gap-1.5"
           >
-            <FileCode className="w-3.5 h-3.5" />
+            <FileCode className="w-3.5 h-3.5 text-[#0B3D91]" />
             <span>Export JSON</span>
           </button>
           <button
             onClick={() => window.print()}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#F5F6F8] hover:bg-gray-200 text-gray-700 transition-colors cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer flex items-center gap-1.5"
           >
-            <Printer className="w-3.5 h-3.5" />
+            <Printer className="w-3.5 h-3.5 text-[#0B3D91]" />
             <span>Print Dossier</span>
           </button>
         </div>

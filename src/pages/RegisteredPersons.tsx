@@ -177,19 +177,20 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
   const flaggedCount = persons.filter((p) => p.status === 'FLAGGED').length;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-900">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-100">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              Registered Persons Database
+            <h1 className="text-xl font-bold tracking-tight text-slate-100 flex items-center gap-2">
+              <Users className="w-5 h-5 text-cyan-400" />
+              <span>Registered Persons Database</span>
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+            <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-cyan-950/80 border border-cyan-800/80 text-cyan-300">
               {totalPersons} Profiles
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Central identity registry linked with registered passports, biometrics, and baseline credential records for automated matching.
           </p>
         </div>
@@ -197,15 +198,15 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
         <div className="flex items-center gap-2.5">
           <button
             onClick={loadPersons}
-            className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
             title="Refresh database"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-4 h-4 text-cyan-400" />
           </button>
           <button
             id="btn-register-person"
             onClick={handleOpenRegisterModal}
-            className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-2 transition-all cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-[#0B3D91] hover:bg-[#082d6c] text-white text-xs font-bold flex items-center gap-2 cursor-pointer"
           >
             <UserPlus className="w-4 h-4" />
             <span>+ Register Person</span>
@@ -215,43 +216,43 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-3.5 shadow-2xs">
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600">
+        <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-4 flex items-center gap-3.5 shadow-2xs">
+          <div className="p-3 rounded-xl bg-cyan-950/80 border border-cyan-800/80 text-cyan-400">
             <Users className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               Registered Citizens & Travelers
             </span>
-            <span className="text-xl font-mono font-bold text-slate-900">
+            <span className="text-xl font-mono font-bold text-slate-100">
               {totalPersons}
             </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-3.5 shadow-2xs">
-          <div className="p-3 rounded-xl bg-emerald-50 text-emerald-600">
+        <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-4 flex items-center gap-3.5 shadow-2xs">
+          <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-800/80 text-emerald-400">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               Active Registered Passports
             </span>
-            <span className="text-xl font-mono font-bold text-emerald-700">
+            <span className="text-xl font-mono font-bold text-emerald-400">
               {activePassports}
             </span>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-3.5 shadow-2xs">
-          <div className="p-3 rounded-xl bg-red-50 text-red-600">
+        <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-4 flex items-center gap-3.5 shadow-2xs">
+          <div className="p-3 rounded-xl bg-red-950/80 border border-red-800/80 text-red-400">
             <ShieldAlert className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               Flagged Watchlist Profiles
             </span>
-            <span className="text-xl font-mono font-bold text-red-700">
+            <span className="text-xl font-mono font-bold text-red-400">
               {flaggedCount}
             </span>
           </div>
@@ -259,35 +260,35 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
+      <div className="bg-slate-900/60 rounded-2xl border border-slate-800 p-4 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-3">
         <form onSubmit={handleSearch} className="relative flex-1 w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search by Person ID (e.g. P001), Name (e.g. Rahul Sharma), Passport No. (e.g. P1234567)..."
-            className="w-full pl-10 pr-24 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-600 focus:bg-white"
+            className="w-full pl-10 pr-24 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-cyan-500/50"
           />
           <button
             type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer"
+            className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold cursor-pointer"
           >
             Search
           </button>
         </form>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <Filter className="w-4 h-4 text-slate-400" />
-          <div className="flex rounded-xl bg-slate-100 p-0.5 text-xs font-medium text-slate-600">
+          <Filter className="w-4 h-4 text-slate-500" />
+          <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800 text-xs font-medium text-slate-400">
             {['ALL', 'ACTIVE', 'FLAGGED', 'SUSPENDED'].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
                 className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                   statusFilter === st
-                    ? 'bg-white text-blue-600 font-bold shadow-2xs'
-                    : 'hover:text-slate-900'
+                    ? 'bg-slate-800 text-cyan-400 font-bold'
+                    : 'hover:text-slate-200'
                 }`}
               >
                 {st === 'ALL' ? 'All Status' : st}
@@ -302,15 +303,15 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
         {/* Persons Grid / Table */}
         <div className={selectedPerson ? 'lg:col-span-7 space-y-3' : 'lg:col-span-12 space-y-3'}>
           {loading ? (
-            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
-              <RefreshCw className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
-              <p className="text-xs text-slate-500 font-medium">Loading registered person records...</p>
+            <div className="text-center py-16 bg-slate-900/60 rounded-2xl border border-slate-800">
+              <RefreshCw className="w-8 h-8 text-cyan-400 mx-auto mb-2" />
+              <p className="text-xs text-slate-400 font-medium">Loading registered person records...</p>
             </div>
           ) : persons.length === 0 ? (
-            <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 space-y-3">
-              <Users className="w-12 h-12 text-slate-300 mx-auto" />
-              <h3 className="text-sm font-bold text-slate-700">No registered persons found</h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            <div className="text-center py-16 bg-slate-900/60 rounded-2xl border border-slate-800 p-8 space-y-3">
+              <Users className="w-12 h-12 text-slate-600 mx-auto" />
+              <h3 className="text-sm font-bold text-slate-300">No registered persons found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 No records match your search criteria. You can register a new person using the button above.
               </p>
             </div>
@@ -323,53 +324,53 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                   <div
                     key={person.id}
                     onClick={() => setSelectedPerson(person)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer bg-white space-y-3 relative overflow-hidden ${
+                    className={`p-4 rounded-2xl border transition-all cursor-pointer bg-slate-900/60 space-y-3 relative overflow-hidden ${
                       isSelected
-                        ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-md'
-                        : 'border-slate-200 hover:border-slate-300 hover:shadow-xs'
+                        ? 'border-cyan-500/80 ring-2 ring-cyan-500/20 bg-slate-900'
+                        : 'border-slate-800 hover:border-slate-700'
                     }`}
                   >
                     {/* Top Row */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs font-mono shrink-0 shadow-2xs">
+                        <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 text-cyan-400 flex items-center justify-center font-bold text-xs font-mono shrink-0 shadow-2xs">
                           {person.person_code}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h4 className="text-xs font-bold text-slate-900">
+                            <h4 className="text-xs font-bold text-slate-100">
                               {person.full_name}
                             </h4>
                             <span
                               className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                                 person.status === 'ACTIVE'
-                                  ? 'bg-emerald-100 text-emerald-800'
+                                  ? 'bg-emerald-950/80 border border-emerald-800/80 text-emerald-400'
                                   : person.status === 'FLAGGED'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-amber-100 text-amber-800'
+                                  ? 'bg-red-950/80 border border-red-800/80 text-red-400'
+                                  : 'bg-amber-950/80 border border-amber-800/80 text-amber-400'
                               }`}
                             >
                               {person.status}
                             </span>
                           </div>
-                          <span className="text-[11px] text-slate-500 block">
+                          <span className="text-[11px] text-slate-400 block">
                             {person.nationality} • {person.gender}
                           </span>
                         </div>
                       </div>
 
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="text-[10px] font-mono text-slate-500">
                         DOB: {person.date_of_birth}
                       </span>
                     </div>
 
                     {/* Document Details Pill */}
                     {primaryDoc && (
-                      <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-[11px]">
+                      <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-[11px]">
                         <div className="flex items-center gap-2">
-                          <CreditCard className="w-3.5 h-3.5 text-blue-600" />
-                          <span className="font-semibold text-slate-700">{primaryDoc.document_type}:</span>
-                          <span className="font-mono font-bold text-slate-900">{primaryDoc.document_number}</span>
+                          <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
+                          <span className="font-semibold text-slate-400">{primaryDoc.document_type}:</span>
+                          <span className="font-mono font-bold text-slate-100">{primaryDoc.document_number}</span>
                         </div>
                         <span className="text-[10px] text-slate-500 font-mono">
                           Exp: {primaryDoc.expiry_date}
@@ -378,13 +379,13 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                     )}
 
                     {/* Actions Bar */}
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedPerson(person);
                         }}
-                        className="text-blue-600 font-semibold text-[11px] hover:underline flex items-center gap-1 cursor-pointer"
+                        className="text-cyan-400 font-semibold text-[11px] hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         <span>View Profile</span>
                         <ArrowRight className="w-3 h-3" />
@@ -400,7 +401,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                               name: person.full_name,
                             });
                           }}
-                          className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                          className="px-2.5 py-1 rounded-lg bg-cyan-950/80 border border-cyan-800/80 text-cyan-300 hover:bg-cyan-900/60 text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
                         >
                           <ShieldCheck className="w-3.5 h-3.5" />
                           <span>Verify Passport</span>
@@ -416,29 +417,29 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
 
         {/* Selected Person Detailed Inspection Drawer */}
         {selectedPerson && (
-          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-5 sticky top-4 self-start">
+          <div className="lg:col-span-5 bg-slate-900/80 rounded-2xl border border-slate-800 p-5 shadow-xs space-y-5 sticky top-4 self-start">
             {/* Drawer Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm font-mono shadow-md shadow-blue-500/20">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-600 text-slate-950 flex items-center justify-center font-bold text-sm font-mono shadow-md shadow-cyan-500/20">
                   {selectedPerson.person_code}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-900">{selectedPerson.full_name}</h3>
+                    <h3 className="text-sm font-bold text-slate-100">{selectedPerson.full_name}</h3>
                     <span
                       className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                         selectedPerson.status === 'ACTIVE'
-                          ? 'bg-emerald-100 text-emerald-800'
+                          ? 'bg-emerald-950/80 border border-emerald-800/80 text-emerald-400'
                           : selectedPerson.status === 'FLAGGED'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-amber-100 text-amber-800'
+                          ? 'bg-red-950/80 border border-red-800/80 text-red-400'
+                          : 'bg-amber-950/80 border border-amber-800/80 text-amber-400'
                       }`}
                     >
                       {selectedPerson.status}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-500 block mt-0.5">
+                  <span className="text-xs text-slate-400 block mt-0.5">
                     ID: {selectedPerson.person_code} • Registered Person
                   </span>
                 </div>
@@ -446,7 +447,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
 
               <button
                 onClick={() => setSelectedPerson(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -457,33 +458,33 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
               <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Registered Biographic Information
               </h4>
-              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Full Legal Name</span>
-                  <span className="font-bold text-slate-900">{selectedPerson.full_name}</span>
+                  <span className="text-[10px] text-slate-500 block">Full Legal Name</span>
+                  <span className="font-bold text-slate-100">{selectedPerson.full_name}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Date of Birth</span>
-                  <span className="font-mono font-bold text-slate-900">{selectedPerson.date_of_birth}</span>
+                  <span className="text-[10px] text-slate-500 block">Date of Birth</span>
+                  <span className="font-mono font-bold text-slate-100">{selectedPerson.date_of_birth}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Nationality</span>
-                  <span className="text-slate-900">{selectedPerson.nationality}</span>
+                  <span className="text-[10px] text-slate-500 block">Nationality</span>
+                  <span className="text-slate-200">{selectedPerson.nationality}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Gender</span>
-                  <span className="text-slate-900">{selectedPerson.gender}</span>
+                  <span className="text-[10px] text-slate-500 block">Gender</span>
+                  <span className="text-slate-200">{selectedPerson.gender}</span>
                 </div>
                 {selectedPerson.email && (
                   <div className="col-span-2">
-                    <span className="text-[10px] text-slate-400 block">Email Address</span>
-                    <span className="text-slate-800 font-mono text-[11px]">{selectedPerson.email}</span>
+                    <span className="text-[10px] text-slate-500 block">Email Address</span>
+                    <span className="text-slate-200 font-mono text-[11px]">{selectedPerson.email}</span>
                   </div>
                 )}
                 {selectedPerson.address && (
                   <div className="col-span-2">
-                    <span className="text-[10px] text-slate-400 block">Registered Address</span>
-                    <span className="text-slate-800 text-[11px]">{selectedPerson.address}</span>
+                    <span className="text-[10px] text-slate-500 block">Registered Address</span>
+                    <span className="text-slate-200 text-[11px]">{selectedPerson.address}</span>
                   </div>
                 )}
               </div>
@@ -501,44 +502,44 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                 {selectedPerson.documents.map((doc) => (
                   <div
                     key={doc.id}
-                    className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-2"
+                    className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 shadow-2xs space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-blue-600" />
-                        <span className="font-bold text-xs text-slate-900">{doc.document_type}</span>
-                        <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                        <CreditCard className="w-4 h-4 text-cyan-400" />
+                        <span className="font-bold text-xs text-slate-100">{doc.document_type}</span>
+                        <span className="font-mono text-xs font-bold text-cyan-300 bg-cyan-950/80 border border-cyan-800/80 px-2 py-0.5 rounded">
                           {doc.document_number}
                         </span>
                       </div>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                           doc.status === 'VALID'
-                            ? 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-emerald-950/80 border border-emerald-800/80 text-emerald-400'
                             : doc.status === 'TAMPERED'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-amber-100 text-amber-800'
+                            ? 'bg-red-950/80 border border-red-800/80 text-red-400'
+                            : 'bg-amber-950/80 border border-amber-800/80 text-amber-400'
                         }`}
                       >
                         {doc.status}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400">
                       <div>
-                        <span className="text-slate-400 block text-[10px]">Issue Date:</span>
-                        <span className="font-mono">{doc.issue_date}</span>
+                        <span className="text-slate-500 block text-[10px]">Issue Date:</span>
+                        <span className="font-mono text-slate-200">{doc.issue_date}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block text-[10px]">Expiry Date:</span>
-                        <span className="font-mono font-semibold text-slate-800">{doc.expiry_date}</span>
+                        <span className="text-slate-500 block text-[10px]">Expiry Date:</span>
+                        <span className="font-mono font-semibold text-slate-200">{doc.expiry_date}</span>
                       </div>
                       <div className="col-span-2">
-                        <span className="text-slate-400 block text-[10px]">Issuing Authority:</span>
-                        <span>{doc.issuing_authority || doc.issuing_country}</span>
+                        <span className="text-slate-500 block text-[10px]">Issuing Authority:</span>
+                        <span className="text-slate-200">{doc.issuing_authority || doc.issuing_country}</span>
                       </div>
                       {doc.document_hash && (
-                        <div className="col-span-2 pt-1 border-t border-slate-100 font-mono text-[9px] text-slate-400 truncate">
+                        <div className="col-span-2 pt-1 border-t border-slate-800/80 font-mono text-[9px] text-slate-500 truncate">
                           SHA-256: {doc.document_hash}
                         </div>
                       )}
@@ -550,11 +551,11 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
 
             {/* Notes / Special Flags */}
             {selectedPerson.notes && (
-              <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 space-y-1">
-                <span className="font-bold block text-[10px] uppercase tracking-wider text-amber-800">
+              <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-200 space-y-1">
+                <span className="font-bold block text-[10px] uppercase tracking-wider text-amber-400">
                   Officer Notes / Security Log
                 </span>
-                <p className="text-[11px] leading-relaxed">{selectedPerson.notes}</p>
+                <p className="text-[11px] leading-relaxed text-amber-300">{selectedPerson.notes}</p>
               </div>
             )}
 
@@ -569,7 +570,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       name: selectedPerson.full_name,
                     })
                   }
-                  className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 px-4 bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <ShieldCheck className="w-4 h-4" />
                   <span>Start Verification Against This Profile</span>
@@ -578,7 +579,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
 
               <button
                 onClick={() => handleDelete(selectedPerson.id)}
-                className="w-full py-2 px-3 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-xl border border-red-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-2 px-3 text-red-400 hover:bg-red-950/50 text-xs font-semibold rounded-xl border border-red-800/80 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Remove From Registry</span>
@@ -590,18 +591,18 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
 
       {/* Register Person Modal */}
       {showRegisterModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-6 text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-xl bg-cyan-600 text-slate-950 flex items-center justify-center font-bold">
                   <UserPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="text-base font-bold text-slate-100">
                     Register New Person & Credential
                   </h3>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-400">
                     Add baseline citizen record to central database for automated verification matching
                   </p>
                 </div>
@@ -609,7 +610,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
 
               <button
                 onClick={() => setShowRegisterModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -618,12 +619,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
             <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
               {/* Person Biographics Section */}
               <div className="space-y-3">
-                <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
+                <h4 className="font-bold text-cyan-400 uppercase tracking-wider text-[11px]">
                   1. Biographic Information
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Person ID / Code
                     </label>
                     <input
@@ -631,12 +632,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       required
                       value={formData.person_code}
                       onChange={(e) => setFormData({ ...formData, person_code: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl font-mono text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Full Legal Name
                     </label>
                     <input
@@ -645,12 +646,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       placeholder="e.g. Rahul Sharma"
                       value={formData.full_name}
                       onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Date of Birth
                     </label>
                     <input
@@ -658,12 +659,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       required
                       value={formData.date_of_birth}
                       onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl font-mono text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Nationality
                     </label>
                     <input
@@ -671,18 +672,18 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       required
                       value={formData.nationality}
                       onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Gender
                     </label>
                     <select
                       value={formData.gender}
                       onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     >
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
@@ -693,13 +694,13 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
               </div>
 
               {/* Registered Document Section */}
-              <div className="space-y-3 pt-3 border-t border-slate-100">
-                <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
+              <div className="space-y-3 pt-3 border-t border-slate-800">
+                <h4 className="font-bold text-cyan-400 uppercase tracking-wider text-[11px]">
                   2. Registered Identity Credential / Passport
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Document Type
                     </label>
                     <select
@@ -707,7 +708,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       onChange={(e) =>
                         setFormData({ ...formData, document_type: e.target.value as DocumentType })
                       }
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     >
                       <option value="Passport">Passport</option>
                       <option value="National ID">National ID</option>
@@ -717,7 +718,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Document / Passport Number
                     </label>
                     <input
@@ -726,12 +727,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       placeholder="e.g. P1234567"
                       value={formData.document_number}
                       onChange={(e) => setFormData({ ...formData, document_number: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl font-mono uppercase text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Date of Issue
                     </label>
                     <input
@@ -739,12 +740,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       required
                       value={formData.issue_date}
                       onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl font-mono text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Date of Expiry
                     </label>
                     <input
@@ -752,12 +753,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       required
                       value={formData.expiry_date}
                       onChange={(e) => setFormData({ ...formData, expiry_date: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-mono text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl font-mono text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Issuing Country
                     </label>
                     <input
@@ -765,20 +766,20 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       required
                       value={formData.issuing_country}
                       onChange={(e) => setFormData({ ...formData, issuing_country: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Status and Notes */}
-              <div className="space-y-3 pt-3 border-t border-slate-100">
-                <h4 className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
+              <div className="space-y-3 pt-3 border-t border-slate-800">
+                <h4 className="font-bold text-cyan-400 uppercase tracking-wider text-[11px]">
                   3. Status & Profile Notes
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Registry Status
                     </label>
                     <select
@@ -786,7 +787,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       onChange={(e) =>
                         setFormData({ ...formData, status: e.target.value as PersonStatus })
                       }
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     >
                       <option value="ACTIVE">ACTIVE (Clear / Standard)</option>
                       <option value="UNDER_REVIEW">UNDER_REVIEW (Requires Manual Check)</option>
@@ -796,7 +797,7 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Contact Email (Optional)
                     </label>
                     <input
@@ -804,12 +805,12 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       placeholder="e.g. rahul.sharma@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Officer Notes
                     </label>
                     <textarea
@@ -817,25 +818,25 @@ export const RegisteredPersons: React.FC<RegisteredPersonsProps> = ({ onNavigate
                       placeholder="e.g. Registered via Passport Seva Kendra / Officer Terminal."
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-hidden resize-none"
+                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-500 focus:ring-2 focus:ring-cyan-500/50 focus:outline-hidden resize-none"
                     />
                   </div>
                 </div>
               </div>
 
               {/* Modal Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowRegisterModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                  className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 text-xs font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-60"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>{isSubmitting ? 'Saving to Database...' : 'Save Registered Person'}</span>

@@ -1,26 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ShieldCheck,
   Search,
+  Filter,
   CheckCircle2,
   AlertTriangle,
   XCircle,
   Clock,
-  Lock,
-  RefreshCw,
-  FileCheck,
-  Calendar,
-  ArrowUpDown,
-  FileText,
   Eye,
-  Shield,
+  FileText,
+  RefreshCw,
 } from 'lucide-react';
-import { VerificationRecord, AuditLogRecord } from '../types/verification';
-import {
-  fetchVerificationRecords,
-  fetchAuditLogs,
-  verifyAuditChain,
-} from '../services/verificationService';
+import { VerificationRecord } from '../types/verification';
+import { fetchVerificationRecords } from '../services/verificationService';
+import { formatVisualDate } from '../utils/mrzUtils';
 
 interface HistoryProps {
   onNavigate?: (path: string) => void;
@@ -33,92 +25,39 @@ export const History: React.FC<HistoryProps> = ({
   onInspectRecord,
   onViewReport,
 }) => {
-  const [activeTab, setActiveTab] = useState<'screenings' | 'blockchain'>('screenings');
   const [records, setRecords] = useState<VerificationRecord[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [dateFilter, setDateFilter] = useState<string>('');
-  const [riskSortOrder, setRiskSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
-
-  // Blockchain verification state
-  const [isVerifyingChain, setIsVerifyingChain] = useState<boolean>(false);
-  const [chainResult, setChainResult] = useState<{
-    isValid: boolean;
-    totalBlocks: number;
-    corruptedBlock: number | null;
-    message: string;
-    algorithm: string;
-  } | null>(null);
-  const [isTamperSimulated, setIsTamperSimulated] = useState<boolean>(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    const [recData, auditData] = await Promise.all([
-      fetchVerificationRecords(),
-      fetchAuditLogs(),
-    ]);
-    setRecords(recData);
-    setAuditLogs(auditData);
-  };
-
-  const handleVerifyIntegrity = async () => {
-    setIsVerifyingChain(true);
-    setChainResult(null);
+    setLoading(true);
     try {
-      const result = await verifyAuditChain();
-      setChainResult(result);
-    } catch (err: any) {
-      setChainResult({
-        isValid: false,
-        totalBlocks: auditLogs.length,
-        corruptedBlock: null,
-        message: err.message || 'Audit ledger verification failed',
-        algorithm: 'SHA-256 Hash Chain',
-      });
+      const recData = await fetchVerificationRecords();
+      setRecords(recData || []);
+    } catch (err) {
+      console.error('Failed to load verification history:', err);
+      setRecords([]);
     } finally {
-      setIsVerifyingChain(false);
+      setLoading(false);
     }
   };
 
-  const handleSimulateTamper = () => {
-    if (auditLogs.length > 1) {
-      const tampered = [...auditLogs];
-      tampered[1] = {
-        ...tampered[1],
-        document_hash: '00000000_TAMPERED_IN_DATABASE_UNAUTHORIZED_MODIFICATION',
-      };
-      setAuditLogs(tampered);
-      setIsTamperSimulated(true);
-      setChainResult(null);
-    }
-  };
-
-  const handleRestoreChain = async () => {
-    await loadData();
-    setIsTamperSimulated(false);
-    setChainResult(null);
-  };
-
-  const toggleRiskSort = () => {
-    if (riskSortOrder === 'none') setRiskSortOrder('desc');
-    else if (riskSortOrder === 'desc') setRiskSortOrder('asc');
-    else setRiskSortOrder('none');
-  };
-
-  let filteredRecords = records.filter((rec) => {
+  const filteredRecords = records.filter((rec) => {
     const matchesFilter =
       statusFilter === 'ALL' ||
       rec.verification_status === statusFilter ||
       (statusFilter === 'REJECTED' && (rec.verification_status === 'FAILED' || rec.verification_status === 'EXPIRED'));
 
     const matchesSearch =
-      rec.applicant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.document_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      rec.verification_id.toLowerCase().includes(searchTerm.toLowerCase());
+      (rec.applicant_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.document_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.verification_id || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesDate =
       !dateFilter ||
@@ -128,364 +67,206 @@ export const History: React.FC<HistoryProps> = ({
     return matchesFilter && matchesSearch && matchesDate;
   });
 
-  if (riskSortOrder === 'asc') {
-    filteredRecords = [...filteredRecords].sort((a, b) => a.risk_score - b.risk_score);
-  } else if (riskSortOrder === 'desc') {
-    filteredRecords = [...filteredRecords].sort((a, b) => b.risk_score - a.risk_score);
-  }
-
-  const getStatusBadge = (status: string, score: number) => {
+  const renderStatusBadge = (status: string, score: number) => {
     if (status === 'VERIFIED' || score <= 30) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/80">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          VERIFIED
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-[#DCFCE7] text-[#15803D] border border-green-300 text-[13px] font-bold uppercase">
+          <CheckCircle2 className="w-4 h-4 text-[#15803D]" />
+          <span>VERIFIED</span>
         </span>
       );
     }
-    if (status === 'SUSPICIOUS' || (score > 30 && score <= 70)) {
+    if (status === 'REVIEW' || status === 'SUSPICIOUS' || (score > 30 && score <= 70)) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-amber-950/60 text-amber-400 border border-amber-800/80">
-          <AlertTriangle className="w-3.5 h-3.5" />
-          SUSPICIOUS
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-[#FEF3C7] text-[#B45309] border border-amber-300 text-[13px] font-bold uppercase">
+          <AlertTriangle className="w-4 h-4 text-[#B45309]" />
+          <span>REVIEW</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-rose-950/60 text-rose-400 border border-rose-800/80">
-        <XCircle className="w-3.5 h-3.5" />
-        REJECTED
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-[4px] bg-[#FEE2E2] text-[#B91C1C] border border-red-300 text-[13px] font-bold uppercase">
+        <XCircle className="w-4 h-4 text-[#B91C1C]" />
+        <span>FAILED</span>
       </span>
     );
   };
 
+  const renderRiskBadge = (score: number) => {
+    if (score <= 30) {
+      return <span className="font-bold text-[#15803D] text-[14px]">LOW ({score}%)</span>;
+    }
+    if (score <= 70) {
+      return <span className="font-bold text-[#B45309] text-[14px]">MEDIUM ({score}%)</span>;
+    }
+    return <span className="font-bold text-[#B91C1C] text-[14px]">HIGH ({score}%)</span>;
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Recently';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-100">
+    <div
+      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      className="p-4 md:p-6 max-w-7xl mx-auto space-y-5 text-[#10233F]"
+    >
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-950/80 text-blue-400 border border-blue-800/80">
-              Audit Logs & Ledger
-            </span>
-            <span className="text-xs text-slate-400 font-mono">
-              Tamper-Evident SHA-256 Hash Chain
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight mt-1">
-            Verification History & Forensic Audit Trail
+          <h1 className="text-[32px] font-bold text-[#10233F] uppercase tracking-tight">
+            Verification History & Audit Ledger
           </h1>
+          <p className="text-[17px] text-[#64748B] mt-1 font-normal">
+            Complete record of past identity screening operations
+          </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex items-center bg-[#0D1322] p-1 rounded-xl border border-slate-800 text-xs">
-          <button
-            onClick={() => setActiveTab('screenings')}
-            className={`px-4 py-1.5 rounded-lg font-mono font-bold transition-all cursor-pointer ${
-              activeTab === 'screenings'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Verification History ({records.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('blockchain')}
-            className={`px-4 py-1.5 rounded-lg font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === 'blockchain'
-                ? 'bg-blue-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Cryptographic Ledger</span>
-          </button>
+        <button
+          onClick={loadData}
+          className="px-5 py-3 rounded-[6px] text-[15px] font-bold bg-white text-[#10233F] border border-[#C9DCF8] hover:bg-[#EAF2FF] cursor-pointer flex items-center gap-2 uppercase"
+        >
+          <RefreshCw className="w-4 h-4 text-[#2563EB]" />
+          <span>Refresh Ledger</span>
+        </button>
+      </div>
+
+      {/* Toolbar & Filters */}
+      <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-6 flex flex-col md:flex-row items-center gap-4">
+        <div className="relative flex-1 w-full">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#64748B]">
+            <Search className="w-5 h-5" />
+          </div>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by Verification ID, Document Number, or Full Name..."
+            className="w-full pl-12 pr-4 py-3 bg-[#F5F9FF] border border-[#C9DCF8] focus:border-[#2563EB] rounded-[6px] text-[16px] text-[#10233F] placeholder-[#64748B] outline-none font-normal"
+          />
+        </div>
+
+        <div className="flex items-center gap-4 w-full md:w-auto text-[15px]">
+          <div className="flex items-center gap-2 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px] px-3 py-2.5 text-[#10233F]">
+            <Filter className="w-4 h-4 text-[#2563EB]" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="Filter records by status"
+              className="bg-transparent border-none text-[15px] text-[#10233F] font-bold outline-none cursor-pointer"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="VERIFIED">Verified</option>
+              <option value="REVIEW">Review Required</option>
+              <option value="REJECTED">Failed / Rejected</option>
+            </select>
+          </div>
+
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            aria-label="Filter records by date"
+            className="bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px] px-3 py-2.5 text-[15px] text-[#10233F] font-bold outline-none cursor-pointer"
+          />
         </div>
       </div>
 
-      {/* Tab 1: Verification History Records */}
-      {activeTab === 'screenings' && (
-        <div className="space-y-4">
-          {/* Search, Status, Date & Risk Filters */}
-          <div className="p-4 rounded-2xl bg-[#0D1322] border border-slate-800/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            {/* Search Input */}
-            <div className="relative flex-1 max-w-sm">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search applicant name, doc no, verification ID..."
-                className="w-full pl-9 pr-3 py-2 bg-[#090D16] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:border-blue-500 transition-all font-mono outline-none"
-              />
-            </div>
-
-            {/* Filter by Status */}
-            <div className="flex items-center gap-1.5 text-xs flex-wrap">
-              {['ALL', 'VERIFIED', 'SUSPICIOUS', 'REJECTED'].map((st) => (
-                <button
-                  key={st}
-                  onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
-                    statusFilter === st
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-[#090D16] text-slate-400 border border-slate-800 hover:text-white'
-                  }`}
-                >
-                  {st}
-                </button>
-              ))}
-            </div>
-
-            {/* Filter by Date & Sort by Risk */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-[#090D16] border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="bg-transparent text-xs text-slate-200 font-mono outline-none"
-                />
-                {dateFilter && (
-                  <button
-                    onClick={() => setDateFilter('')}
-                    className="text-slate-400 hover:text-white text-[10px] font-mono font-bold"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              <button
-                onClick={toggleRiskSort}
-                className={`px-3 py-2 rounded-xl text-xs font-mono font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  riskSortOrder !== 'none'
-                    ? 'bg-blue-950/80 border-blue-800 text-blue-400'
-                    : 'bg-[#090D16] border-slate-800 text-slate-300 hover:bg-slate-800'
-                }`}
-                title="Sort by risk score"
-              >
-                <ArrowUpDown className="w-3.5 h-3.5" />
-                <span>Risk: {riskSortOrder === 'none' ? 'Default' : riskSortOrder.toUpperCase()}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Records Table */}
-          <div className="bg-[#0D1322] border border-slate-800/90 rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#090D16] text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                  <tr>
-                    <th className="py-3 px-4">Verification ID</th>
-                    <th className="py-3 px-4">Date</th>
-                    <th className="py-3 px-4">Document Type</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4">Risk Score</th>
-                    <th className="py-3 px-4">Officer</th>
-                    <th className="py-3 px-4 text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 text-slate-200">
-                  {filteredRecords.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="py-16 text-center text-slate-400">
-                        <div className="flex flex-col items-center justify-center space-y-2 max-w-sm mx-auto">
-                          <FileCheck className="w-8 h-8 text-slate-500" />
-                          <div className="font-bold text-sm text-white">No screening records match</div>
-                          <p className="text-xs text-slate-400 font-mono">
-                            Clear active filters or run a new document verification.
-                          </p>
-                          {onNavigate && (
-                            <button
-                              onClick={() => onNavigate('/verify')}
-                              className="mt-2 px-4 py-2 rounded-xl text-xs font-mono font-bold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer transition-colors shadow-sm"
-                            >
-                              New Verification
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredRecords.map((rec) => (
-                      <tr key={rec.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3 px-4 font-mono font-bold text-blue-400">
-                          {rec.verification_id}
-                          <div className="text-[10px] text-slate-400 font-sans font-normal">
-                            {rec.applicant_name}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
-                          {rec.timestamp || (rec.created_at ? rec.created_at.slice(0, 10) : '2026-09-05')}
-                        </td>
-                        <td className="py-3 px-4 font-medium text-slate-200">
-                          {rec.document_type}
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            {rec.document_number}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          {getStatusBadge(rec.verification_status, rec.risk_score)}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`font-mono font-bold text-xs ${
-                              rec.risk_score <= 30
-                                ? 'text-emerald-400'
-                                : rec.risk_score <= 70
-                                ? 'text-amber-400'
-                                : 'text-rose-400'
-                            }`}
-                          >
-                            {rec.risk_score} / 100
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 font-mono text-xs text-slate-400">
-                          {rec.officer_id || rec.verified_by || 'Insp. Rajeshwar'}
-                        </td>
-                        <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                          <button
-                            onClick={() => {
-                              if (onInspectRecord) onInspectRecord(rec);
-                              else if (onNavigate) onNavigate('/verify');
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono font-bold text-[11px] border border-slate-700 transition-colors cursor-pointer"
-                            title="Inspect in Verification Console"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Inspect</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (onViewReport) onViewReport(rec);
-                              else if (onNavigate) onNavigate('/reports');
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-950/80 hover:bg-blue-900 text-blue-400 font-mono font-bold text-[11px] border border-blue-800 transition-colors cursor-pointer"
-                            title="Generate Official Report"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>Report</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 2: Blockchain / Cryptographic Audit Trail */}
-      {activeTab === 'blockchain' && (
-        <div className="space-y-4">
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                <Lock className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Tamper-Evident SHA-256 Hash Chain
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Sequential cryptographic hashing across records. Direct database tampering breaks the ledger digest.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleVerifyIntegrity}
-                disabled={isVerifyingChain}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isVerifyingChain ? 'animate-spin' : ''}`} />
-                <span>Verify Chain Integrity</span>
-              </button>
-
-              {!isTamperSimulated ? (
-                <button
-                  onClick={handleSimulateTamper}
-                  className="px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Simulate DB Tampering
-                </button>
+      {/* History Table */}
+      <div className="bg-white border border-[#C9DCF8] rounded-[8px] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[16px]">
+            <thead className="bg-[#EAF2FF] border-b border-[#C9DCF8] text-[#10233F] uppercase font-bold text-[14px]">
+              <tr>
+                <th className="py-3.5 px-5">Verification ID</th>
+                <th className="py-3.5 px-5">Document Number</th>
+                <th className="py-3.5 px-5">Document Type</th>
+                <th className="py-3.5 px-5">Result</th>
+                <th className="py-3.5 px-5">Risk</th>
+                <th className="py-3.5 px-5">Officer</th>
+                <th className="py-3.5 px-5">Date</th>
+                <th className="py-3.5 px-5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#C9DCF8] text-[#10233F]">
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-[#64748B]">
+                    <span>Loading verification ledger...</span>
+                  </td>
+                </tr>
+              ) : filteredRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-[#64748B]">
+                    <span>No verification records match your query.</span>
+                  </td>
+                </tr>
               ) : (
-                <button
-                  onClick={handleRestoreChain}
-                  className="px-3 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Restore Ledger
-                </button>
-              )}
-            </div>
-          </div>
-
-          {chainResult && (
-            <div
-              className={`p-4 rounded-xl border flex items-center gap-3 text-xs ${
-                chainResult.isValid
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                  : 'bg-red-50 border-red-200 text-red-900'
-              }`}
-            >
-              {chainResult.isValid ? (
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-              ) : (
-                <XCircle className="w-5 h-5 text-red-600 shrink-0" />
-              )}
-              <div>
-                <div className="font-bold">{chainResult.message}</div>
-                <div className="text-[11px] text-slate-600 font-mono mt-0.5">
-                  Validated {chainResult.totalBlocks} sequential ledger blocks using {chainResult.algorithm}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Audit Logs Table */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                  <tr>
-                    <th className="py-3 px-4">Block #</th>
-                    <th className="py-3 px-4">Verification ID</th>
-                    <th className="py-3 px-4">Previous Hash</th>
-                    <th className="py-3 px-4">Block Hash (SHA-256)</th>
-                    <th className="py-3 px-4">Timestamp</th>
+                filteredRecords.map((record) => (
+                  <tr key={record.verification_id} className="hover:bg-[#F5F9FF]">
+                    <td className="py-3.5 px-5 font-bold text-[#2563EB]">
+                      {record.verification_id}
+                    </td>
+                    <td className="py-3.5 px-5 font-bold">
+                      {record.document_number || 'N/A'}
+                    </td>
+                    <td className="py-3.5 px-5 font-normal">
+                      {record.document_type || 'Passport'}
+                    </td>
+                    <td className="py-3.5 px-5">
+                      {renderStatusBadge(record.verification_status, record.risk_score)}
+                    </td>
+                    <td className="py-3.5 px-5">
+                      {renderRiskBadge(record.risk_score)}
+                    </td>
+                    <td className="py-3.5 px-5 font-normal">
+                      {record.verified_by || 'A001'}
+                    </td>
+                    <td className="py-3.5 px-5 text-[#64748B]">
+                      {formatDate(record.created_at || record.timestamp)}
+                    </td>
+                    <td className="py-3.5 px-5 text-right space-x-2">
+                      <button
+                        onClick={() => {
+                          if (onViewReport) onViewReport(record);
+                          else if (onInspectRecord) onInspectRecord(record);
+                        }}
+                        className="px-3 py-1.5 rounded-[4px] bg-[#2563EB] text-white text-[14px] font-bold cursor-pointer inline-flex items-center gap-1.5 uppercase"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Report</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (onInspectRecord) onInspectRecord(record);
+                          else if (onNavigate) onNavigate('/verify');
+                        }}
+                        className="px-3 py-1.5 rounded-[4px] bg-white text-[#10233F] border border-[#C9DCF8] text-[14px] font-bold cursor-pointer inline-flex items-center gap-1.5 uppercase"
+                      >
+                        <Eye className="w-4 h-4 text-[#2563EB]" />
+                        <span>Inspect</span>
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-700">
-                  {auditLogs.map((block) => (
-                    <tr key={block.id} className="hover:bg-slate-50">
-                      <td className="py-3 px-4 font-bold text-slate-900">
-                        #{block.block_index}
-                      </td>
-                      <td className="py-3 px-4 text-blue-600 font-bold">
-                        {block.verification_id}
-                      </td>
-                      <td className="py-3 px-4 text-slate-400 truncate max-w-[140px]">
-                        {block.previous_hash}
-                      </td>
-                      <td className="py-3 px-4 text-slate-900 font-bold truncate max-w-[200px]">
-                        {block.document_hash}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500 text-[11px]">
-                        {new Date(block.created_at).toISOString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 };

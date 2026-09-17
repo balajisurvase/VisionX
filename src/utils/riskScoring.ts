@@ -248,17 +248,17 @@ export function calculateThreatRiskScore(input: ThreatRiskPillars): ThreatRiskEv
       mrz: {
         pillarName: 'ICAO 9303 Checksum Cryptography',
         weightMax: 25,
-        riskPoints: 0,
-        status: 'CLEAR',
-        metricLabel: 'VALID MOD-10',
+        riskPoints: mrzRisk,
+        status: mrzStatus,
+        metricLabel: mrzStatus === 'CLEAR' ? 'VALID MOD-10' : mrzStatus === 'CRITICAL' ? 'CHECKSUM FAIL' : 'VIZ MISMATCH',
         explanation: mrzExplanation,
       },
       forensics: {
         pillarName: 'OpenCV Substrate & ELA Forensics',
         weightMax: 35,
-        riskPoints: 0,
-        status: 'CLEAR',
-        metricLabel: '0.0% Anomaly (HOMOGENEOUS)',
+        riskPoints: forensicRisk,
+        status: forensicStatus,
+        metricLabel: tScore > 0 ? `${tScore.toFixed(1)}% Anomaly` : '0.0% Anomaly (HOMOGENEOUS)',
         explanation: forensicExplanation,
       },
       biometrics: {

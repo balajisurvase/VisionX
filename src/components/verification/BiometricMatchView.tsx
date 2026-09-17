@@ -40,10 +40,10 @@ export const BiometricMatchView: React.FC<BiometricMatchViewProps> = ({
     (record.verification_id ? `/api/verifications/${record.verification_id}/image/person` : null);
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <Camera className="w-5 h-5 text-blue-600" />
+          <Camera className="w-5 h-5 text-[#0B3D91]" />
           <div>
             <h3 className="text-sm font-bold text-slate-900 tracking-tight">
               1:1 Multimodal Facial Biometric Verification & Matching
@@ -63,11 +63,11 @@ export const BiometricMatchView: React.FC<BiometricMatchViewProps> = ({
       {/* Side-by-Side Face Ingestion Comparator */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
         {/* Document Crop Photo (col-span-5) */}
-        <div className="md:col-span-5 bg-slate-50 rounded-2xl p-4 border border-slate-200 text-center space-y-3">
+        <div className="md:col-span-5 bg-slate-50 rounded-xl p-4 border border-slate-200 text-center space-y-3">
           <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
             A. Passport Document Portrait (Extracted)
           </span>
-          <div className="w-36 h-44 mx-auto bg-white rounded-xl border-2 border-blue-500/50 shadow-sm overflow-hidden flex flex-col items-center justify-center relative">
+          <div className="w-36 h-44 mx-auto bg-white rounded-xl border-2 border-slate-300 overflow-hidden flex flex-col items-center justify-center relative">
             {portraitSrc ? (
               <img
                 src={portraitSrc}
@@ -80,7 +80,7 @@ export const BiometricMatchView: React.FC<BiometricMatchViewProps> = ({
             ) : null}
             {!portraitSrc && (
               <>
-                <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-1">
+                <div className="w-14 h-14 rounded-full bg-slate-100 text-[#0B3D91] flex items-center justify-center mb-1">
                   <Camera className="w-7 h-7" />
                 </div>
                 <span className="text-[10px] font-bold text-slate-700 font-mono">PORTRAIT CROP</span>
@@ -90,10 +90,10 @@ export const BiometricMatchView: React.FC<BiometricMatchViewProps> = ({
 
             {/* Facial Landmark Dots Overlay */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-40">
-              <div className="w-24 h-32 border border-blue-400/50 rounded-full" />
+              <div className="w-24 h-32 border border-slate-400 rounded-full" />
             </div>
             <div className="absolute top-1 right-1">
-              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-blue-600 text-white font-mono">
+              <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[#0B3D91] text-white font-mono">
                 DOC ROI
               </span>
             </div>
@@ -114,7 +114,7 @@ export const BiometricMatchView: React.FC<BiometricMatchViewProps> = ({
             </div>
             <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full bg-emerald-600 transition-all duration-500"
+                className="h-full rounded-full bg-emerald-600"
                 style={{ width: `${matchScore}%` }}
               />
             </div>
@@ -123,11 +123,11 @@ export const BiometricMatchView: React.FC<BiometricMatchViewProps> = ({
         </div>
 
         {/* Registered / Live Biometric Photo (col-span-5) */}
-        <div className="md:col-span-5 bg-slate-50 rounded-2xl p-4 border border-slate-200 text-center space-y-3">
+        <div className="md:col-span-5 bg-slate-50 rounded-xl p-4 border border-slate-200 text-center space-y-3">
           <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
             B. Biometric Image / Live Subject
           </span>
-          <div className="w-36 h-44 mx-auto bg-white rounded-xl border-2 border-emerald-500/50 shadow-sm overflow-hidden flex flex-col items-center justify-center relative">
+          <div className="w-36 h-44 mx-auto bg-white rounded-xl border-2 border-emerald-500/50 overflow-hidden flex flex-col items-center justify-center relative">
             {biometricSrc ? (
               <img
                 src={biometricSrc}

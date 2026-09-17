@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { SystemBootLoader } from './components/SystemBootLoader';
 import { Login } from './pages/Login';
 import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
@@ -12,7 +11,7 @@ import { Reports } from './pages/Reports';
 import { Profile } from './pages/Profile';
 import { DemoCenter } from './pages/DemoCenter';
 import { Settings } from './pages/Settings';
-import { getCurrentSession, logoutUser } from './services/authService';
+import { logoutUser } from './services/authService';
 import { OfficerUser } from './types/auth';
 import { DemoScenario, VerificationRecord } from './types/verification';
 
@@ -22,7 +21,6 @@ export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [activeDemoScenario, setActiveDemoScenario] = useState<DemoScenario | null>(null);
   const [inspectedRecord, setInspectedRecord] = useState<VerificationRecord | null>(null);
-  const [isBooting, setIsBooting] = useState<boolean>(true);
 
   // Automatically logout on page reload / fresh startup per security requirements
   useEffect(() => {
@@ -71,14 +69,9 @@ export function App() {
     setCurrentPath('/reports');
   };
 
-  const handleVerifySpecificDoc = (docNumber: string) => {
+  const handleVerifySpecificDoc = () => {
     setCurrentPath('/verify');
   };
-
-  // System boot loading animation on initial page load / refresh
-  if (isBooting) {
-    return <SystemBootLoader onComplete={() => setIsBooting(false)} />;
-  }
 
   // If user requests landing page
   if (currentPath === '/landing') {
@@ -95,7 +88,7 @@ export function App() {
     );
   }
 
-  // If not authenticated, render the dedicated SSB Officer Login page
+  // If not authenticated, render the dedicated VisionX Login page
   if (!isAuthenticated || currentPath === '/login') {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
@@ -106,48 +99,48 @@ export function App() {
       case '/dashboard':
       case '/':
         return {
-          title: 'IdentityGuard AI Dashboard',
-          subtitle: 'Real-time AI-based identity & document screening analytics',
+          title: 'VisionX Verification Workstation',
+          subtitle: 'Identity & document screening dashboard',
         };
       case '/verify':
         return {
-          title: 'New Verification',
-          subtitle: 'Automated 8-stage computer vision & biometric screening pipeline',
+          title: 'New Document Verification',
+          subtitle: 'Automated document & identity screening pipeline',
         };
       case '/documents':
         return {
-          title: 'Document Registry',
-          subtitle: 'Sovereign document repository & travel credentials catalog',
+          title: 'Documents Registry',
+          subtitle: 'Registered identity documents database',
         };
       case '/history':
         return {
-          title: 'Verification History & Ledger',
-          subtitle: 'Cryptographic SHA-256 tamper-evident screening audit trail',
+          title: 'Verification History & Audit Ledger',
+          subtitle: 'Complete record of past identity screening operations',
         };
       case '/reports':
         return {
-          title: 'Official Verification Reports',
-          subtitle: 'Multi-layer forensic screening certificates & printable dockets',
+          title: 'Forensic Reports Center',
+          subtitle: 'Official identity & document verification dossiers',
         };
       case '/profile':
         return {
-          title: 'Officer Profile & Credentials',
-          subtitle: 'Terminal authorization and identity screening statistics',
+          title: 'Officer Credentials & Performance',
+          subtitle: 'Terminal authorization and screening statistics',
         };
       case '/demo':
         return {
-          title: 'Benchmark Demo Center (SIH 2026)',
-          subtitle: 'Evaluation scenarios for Problem Statement 26188 evaluation',
+          title: 'Benchmark Test Center',
+          subtitle: 'Standardized evaluation scenarios and attack vectors',
         };
       case '/settings':
         return {
-          title: 'Terminal & Officer Settings',
-          subtitle: 'Security post profile, authentication & Supabase database integration',
+          title: 'System Settings & Security',
+          subtitle: 'Terminal configuration, AI vision models, and database credentials',
         };
       default:
         return {
-          title: 'IdentityGuard AI Screening',
-          subtitle: 'Ministry of Home Affairs • SIH 2026',
+          title: 'VisionX Workstation',
+          subtitle: 'Identity & Document Verification System',
         };
     }
   };
@@ -155,7 +148,10 @@ export function App() {
   const pageInfo = getPageInfo();
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-100 text-slate-900 font-sans selection:bg-blue-600 selection:text-white">
+    <div
+      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      className="flex h-screen w-screen overflow-hidden bg-[#F5F9FF] text-[#10233F]"
+    >
       {/* Left Sidebar */}
       <Sidebar
         currentPath={currentPath}
@@ -173,7 +169,7 @@ export function App() {
           user={user}
         />
 
-        <main className="flex-1 overflow-y-auto bg-slate-50">
+        <main className="flex-1 overflow-y-auto bg-[#F5F9FF]">
           {(currentPath === '/dashboard' || currentPath === '/') && (
             <Dashboard
               onNavigate={handleNavigate}

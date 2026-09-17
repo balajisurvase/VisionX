@@ -255,6 +255,32 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 },
 });
 
+const uploadMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  upload.any()(req, res, (err: any) => {
+    if (err) {
+      console.error('Multer file upload error:', err);
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(400).json({
+        success: false,
+        error: `File upload error: ${err.message || 'Failed to process file upload'}`,
+        stage: 'ingestion',
+        details: err.message || String(err),
+        detail: err.message || String(err),
+      });
+    }
+    // If req.files is an array from upload.any(), convert it to a record map by fieldname for backwards compatibility
+    if (Array.isArray(req.files)) {
+      const filesMap: { [fieldname: string]: Express.Multer.File[] } = {};
+      for (const f of req.files) {
+        if (!filesMap[f.fieldname]) filesMap[f.fieldname] = [];
+        filesMap[f.fieldname].push(f);
+      }
+      req.files = filesMap as any;
+    }
+    next();
+  });
+};
+
 // Lazy initialize Gemini AI client
 let aiClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI | null {
@@ -1338,13 +1364,7 @@ function parseTd3PassportMrz(line1?: string, line2?: string) {
 // 8. Document Screening Core (AI Gemini Vision + Forensics Engine)
 app.post(
   ['/api/verification/screen', '/api/verify'],
-  upload.fields([
-    { name: 'file', maxCount: 1 },
-    { name: 'document', maxCount: 1 },
-    { name: 'passport', maxCount: 1 },
-    { name: 'person_photo', maxCount: 1 },
-    { name: 'selfie', maxCount: 1 },
-  ]),
+  uploadMiddleware,
   async (req, res) => {
     let currentStage = 'ingestion';
     try {
@@ -1411,22 +1431,38 @@ app.post(
 
       // Primary extraction using Gemini Vision API
       const gemini = getGeminiClient();
+      if (!gemini) {
+        return res.status(500).json({
+          success: false,
+          error: 'GEMINI_API_KEY is not configured on the server. Real Gemini API is required for document verification.',
+          stage: 'gemini_extraction',
+          details: 'GEMINI_API_KEY environment variable is missing on the server.'
+        });
+      }
+
       const isDocImage = docFile.mimetype.startsWith('image/') || docFile.originalname.match(/\.(png|jpe?g|webp|bmp|tiff)$/i);
+      if (!isDocImage) {
+        return res.status(400).json({
+          success: false,
+          error: 'Uploaded file is not a supported document image format (JPG, PNG, WEBP, BMP, TIFF).',
+          stage: 'ingestion',
+          details: `Received mimetype: ${docFile.mimetype}, filename: ${docFile.originalname}`
+        });
+      }
 
-      if (gemini && isDocImage) {
-        const docMime = docFile.mimetype && docFile.mimetype.startsWith('image/') ? docFile.mimetype : 'image/jpeg';
-        const docBase64 = (imageEvidence.orientedBuffer || docFile.buffer).toString('base64');
+      const docMime = docFile.mimetype && docFile.mimetype.startsWith('image/') ? docFile.mimetype : 'image/jpeg';
+      const docBase64 = (imageEvidence.orientedBuffer || docFile.buffer).toString('base64');
 
-        const parts: any[] = [
-          {
-            inlineData: {
-              mimeType: docMime,
-              data: docBase64,
-            },
+      const parts: any[] = [
+        {
+          inlineData: {
+            mimeType: docMime,
+            data: docBase64,
           },
-        ];
+        },
+      ];
 
-        const prompt = `You are an expert forensic identity document verification and OCR system.
+      const prompt = `You are an expert forensic identity document verification and OCR system.
 Inspect this identity document / passport image thoroughly for border control screening.
 
 Perform dual-zone extraction:
@@ -1493,112 +1529,88 @@ Return pure JSON only using this structure:
   "tampering_notes": []
 }`;
 
-        parts.push({ text: prompt });
+      parts.push({ text: prompt });
 
-        const candidateModels = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.6-flash'];
+      const candidateModels = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.6-flash'];
+      let lastGeminiError: string | null = null;
 
-        for (const modelName of candidateModels) {
-          try {
-            const aiResponse = await gemini.models.generateContent({
-              model: modelName,
-              contents: { parts },
-              config: { responseMimeType: 'application/json' },
-            });
+      for (const modelName of candidateModels) {
+        try {
+          const aiResponse = await gemini.models.generateContent({
+            model: modelName,
+            contents: { parts },
+            config: { responseMimeType: 'application/json' },
+          });
 
-            if (aiResponse?.text) {
-              const cleanJsonText = aiResponse.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
-              const parsed = JSON.parse(cleanJsonText);
-              
-              console.log(`[GEMINI] RESPONSE RECEIVED (${modelName})`);
-              console.log(`[GEMINI] JSON PARSED: YES`);
+          if (aiResponse?.text) {
+            const cleanJsonText = aiResponse.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
+            const parsed = JSON.parse(cleanJsonText);
+            
+            console.log(`[GEMINI] RESPONSE RECEIVED (${modelName})`);
+            console.log(`[GEMINI] JSON PARSED: YES`);
 
-              if (parsed.document_type) documentType = String(parsed.document_type);
-              if (parsed.full_name) applicantName = String(parsed.full_name).toUpperCase();
-              if (parsed.surname) surname = String(parsed.surname).toUpperCase();
-              if (parsed.given_names) givenNames = String(parsed.given_names).toUpperCase();
-              if (!applicantName && (surname || givenNames)) {
-                applicantName = `${givenNames || ''} ${surname || ''}`.trim();
-              }
-
-              if (parsed.document_number) documentNumber = String(parsed.document_number).toUpperCase().replace(/\s+/g, '');
-              if (parsed.nationality || parsed.issuing_country || parsed.country_code) {
-                nationality = String(parsed.nationality || parsed.issuing_country || parsed.country_code).toUpperCase();
-              }
-
-              if (parsed.date_of_birth) dateOfBirth = String(parsed.date_of_birth);
-              if (parsed.place_of_birth) placeOfBirth = String(parsed.place_of_birth);
-              if (parsed.date_of_issue) dateOfIssue = String(parsed.date_of_issue);
-              if (parsed.date_of_expiry) dateOfExpiry = String(parsed.date_of_expiry);
-              if (parsed.sex) gender = String(parsed.sex).toUpperCase().slice(0, 1);
-              if (parsed.issuing_authority) issuingAuthority = String(parsed.issuing_authority);
-              if (parsed.endorsements) endorsements = String(parsed.endorsements);
-
-              if (parsed.mrz && typeof parsed.mrz === 'object') {
-                mrzDetected = Boolean(parsed.mrz.detected || parsed.mrz.line1);
-                if (parsed.mrz.line1) mrzLine1 = String(parsed.mrz.line1).trim();
-                if (parsed.mrz.line2) mrzLine2 = String(parsed.mrz.line2).trim();
-                if (mrzLine1 && mrzLine2) {
-                  mrzRaw = `${mrzLine1}\n${mrzLine2}`;
-                }
-              }
-
-              if (parsed.portrait && typeof parsed.portrait === 'object') {
-                portraitDetected = Boolean(parsed.portrait.detected);
-                if (parsed.portrait.bounding_box) portraitBoundingBox = parsed.portrait.bounding_box;
-              }
-
-              if (parsed.tampering_detected) tamperingDetected = Boolean(parsed.tampering_detected);
-              if (typeof parsed.tampering_score === 'number') tamperingScore = parsed.tampering_score;
-              if (Array.isArray(parsed.tampering_notes)) tamperingReasons = parsed.tampering_notes;
-
-              ocrConfidence = applicantName && documentNumber ? 95 : 60;
-              extractedFromAi = true;
-              break;
+            if (parsed.document_type) documentType = String(parsed.document_type);
+            if (parsed.full_name) applicantName = String(parsed.full_name).toUpperCase();
+            if (parsed.surname) surname = String(parsed.surname).toUpperCase();
+            if (parsed.given_names) givenNames = String(parsed.given_names).toUpperCase();
+            if (!applicantName && (surname || givenNames)) {
+              applicantName = `${givenNames || ''} ${surname || ''}`.trim();
             }
-          } catch (modelErr: any) {
-            const errString = modelErr?.message || String(modelErr);
-            if (errString.includes('503') || errString.includes('high demand') || errString.includes('UNAVAILABLE') || errString.includes('429')) {
-              console.log(`[GEMINI] Model ${modelName} is temporarily experiencing high demand, falling over to next model candidate.`);
-            } else {
-              console.log(`[GEMINI] Model ${modelName} notice:`, errString.slice(0, 100));
+
+            if (parsed.document_number) documentNumber = String(parsed.document_number).toUpperCase().replace(/\s+/g, '');
+            if (parsed.nationality || parsed.issuing_country || parsed.country_code) {
+              nationality = String(parsed.nationality || parsed.issuing_country || parsed.country_code).toUpperCase();
             }
-            continue;
+
+            if (parsed.date_of_birth) dateOfBirth = String(parsed.date_of_birth);
+            if (parsed.place_of_birth) placeOfBirth = String(parsed.place_of_birth);
+            if (parsed.date_of_issue) dateOfIssue = String(parsed.date_of_issue);
+            if (parsed.date_of_expiry) dateOfExpiry = String(parsed.date_of_expiry);
+            if (parsed.sex) gender = String(parsed.sex).toUpperCase().slice(0, 1);
+            if (parsed.issuing_authority) issuingAuthority = String(parsed.issuing_authority);
+            if (parsed.endorsements) endorsements = String(parsed.endorsements);
+
+            if (parsed.mrz && typeof parsed.mrz === 'object') {
+              mrzDetected = Boolean(parsed.mrz.detected || parsed.mrz.line1);
+              if (parsed.mrz.line1) mrzLine1 = String(parsed.mrz.line1).trim();
+              if (parsed.mrz.line2) mrzLine2 = String(parsed.mrz.line2).trim();
+              if (mrzLine1 && mrzLine2) {
+                mrzRaw = `${mrzLine1}\n${mrzLine2}`;
+              }
+            }
+
+            if (parsed.portrait && typeof parsed.portrait === 'object') {
+              portraitDetected = Boolean(parsed.portrait.detected);
+              if (parsed.portrait.bounding_box) portraitBoundingBox = parsed.portrait.bounding_box;
+            }
+
+            if (parsed.tampering_detected) tamperingDetected = Boolean(parsed.tampering_detected);
+            if (typeof parsed.tampering_score === 'number') tamperingScore = parsed.tampering_score;
+            if (Array.isArray(parsed.tampering_notes)) tamperingReasons = parsed.tampering_notes;
+
+            ocrConfidence = applicantName && documentNumber ? 95 : 60;
+            extractedFromAi = true;
+            break;
           }
+        } catch (modelErr: any) {
+          lastGeminiError = modelErr?.message || String(modelErr);
+          if (lastGeminiError.includes('503') || lastGeminiError.includes('high demand') || lastGeminiError.includes('UNAVAILABLE') || lastGeminiError.includes('429')) {
+            console.log(`[GEMINI] Model ${modelName} is temporarily experiencing high demand, trying next model candidate.`);
+          } else {
+            console.log(`[GEMINI] Model ${modelName} notice:`, lastGeminiError.slice(0, 100));
+          }
+          continue;
         }
       }
 
-      // Robust fallback derivation if AI vision was unreachable due to upstream service demand
-      if (!applicantName || applicantName === 'NOT DETECTED') {
-        const cleanBaseName = filename.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ').trim().toUpperCase();
-        applicantName = cleanBaseName.length >= 3 && !cleanBaseName.includes('DOCUMENT') && !cleanBaseName.includes('PASSPORT') && !cleanBaseName.includes('IMAGE')
-          ? cleanBaseName
-          : 'BALAJI RAVINDRA SURVASE';
-      }
-
-      if (!documentNumber || documentNumber === 'NOT DETECTED') {
-        const numMatch = filename.match(/[A-Z0-9]{7,10}/i);
-        documentNumber = numMatch ? numMatch[0].toUpperCase() : 'L89230419';
-      }
-
-      if (!nationality || nationality === 'NOT DETECTED') {
-        nationality = 'IND';
-      }
-      if (!dateOfBirth) {
-        dateOfBirth = '1996-08-15';
-      }
-      if (!dateOfExpiry) {
-        dateOfExpiry = '2032-08-14';
-      }
-      if (!gender) {
-        gender = 'M';
-      }
-
-      if (!mrzLine1 || !mrzLine2) {
-        mrzDetected = true;
-        mrzChecksumValid = true;
-        mrzLine1 = `P<${nationality}${applicantName.replace(/\s+/g, '<')}<<<<<<<<<<<<<<<<<<<`.slice(0, 44);
-        mrzLine2 = `${documentNumber.padEnd(9, '<')}8${nationality}9608154M3208148<<<<<<<<<<<<<<02`.slice(0, 44);
-        mrzRaw = `${mrzLine1}\n${mrzLine2}`;
+      if (!extractedFromAi) {
+        console.error(`[/api/verify] All Gemini API model attempts failed: ${lastGeminiError}`);
+        return res.status(503).json({
+          success: false,
+          error: `Gemini API document analysis failed: ${lastGeminiError || 'AI vision models were unreachable.'}`,
+          stage: 'gemini_extraction',
+          details: lastGeminiError || 'All candidate Gemini models failed to process the image.'
+        });
       }
 
       // Pass 2: Targeted MRZ crop analysis if MRZ not fully detected in primary pass
@@ -2947,10 +2959,37 @@ app.all('/api/*', (req, res) => {
   });
 });
 
+// Global Express Error Handler - MUST return JSON for all /api requests
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[SERVER UNCAUGHT ERROR]', err);
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.setHeader('Content-Type', 'application/json');
+  const statusCode = typeof err.status === 'number' ? err.status : (typeof err.statusCode === 'number' ? err.statusCode : 500);
+  return res.status(statusCode).json({
+    success: false,
+    error: err.message || 'An unexpected server error occurred',
+    stage: 'server_error',
+    details: process.env.NODE_ENV !== 'production' ? (err.stack || String(err)) : (err.message || String(err)),
+    detail: err.message || 'An unexpected server error occurred',
+  });
+});
+
 // -----------------------------------------------------------------------------
 // Vite Middleware & Static Production Handler
 // -----------------------------------------------------------------------------
 async function startServer() {
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn('\n================================================================');
+    console.warn('[IDENTITYGUARD WARNING] GEMINI_API_KEY is NOT set in environment variables!');
+    console.warn('Real Gemini API document OCR, MRZ parsing, and screening will fail.');
+    console.warn('Please configure GEMINI_API_KEY to enable real AI document screening.');
+    console.warn('================================================================\n');
+  } else {
+    console.log('[IDENTITYGUARD INFO] GEMINI_API_KEY configured successfully.');
+  }
+
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },

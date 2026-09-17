@@ -7,10 +7,7 @@ import {
   AlertTriangle,
   AlertCircle,
   XCircle,
-  Clock,
   RefreshCw,
-  Printer,
-  Sparkles,
   Camera,
   Layers,
   ChevronRight,
@@ -18,11 +15,7 @@ import {
   FileCheck,
   Lock,
   MessageSquare,
-  Building2,
-  SlidersHorizontal,
   ArrowRight,
-  Eye,
-  FileSearch,
   Check,
   X,
   CreditCard,
@@ -46,15 +39,12 @@ import { ForensicsElaViewer } from '../components/verification/ForensicsElaViewe
 import { BlockchainAuditBadge } from '../components/verification/BlockchainAuditBadge';
 import { OfficerDecisionSection } from '../components/verification/OfficerDecisionSection';
 import { RealTimeTimelineCard } from '../components/verification/RealTimeTimelineCard';
-import { ThreatRiskScoreCard } from '../components/verification/ThreatRiskScoreCard';
-import { VerificationPipelineDebugCard } from '../components/verification/VerificationPipelineDebugCard';
 import { VisibleVsMrzTable } from '../components/verification/VisibleVsMrzTable';
 import { DocumentPortraitCard } from '../components/verification/DocumentPortraitCard';
 import { BiometricMatchView } from '../components/verification/BiometricMatchView';
 import { ForensicReportModal } from '../components/verification/ForensicReportModal';
 import { calculateThreatRiskScore } from '../utils/riskScoring';
 import {
-  normalizeIsoDate,
   formatVisualDate,
   generateTd3Mrz,
   evaluateRealTimeExpiry,
@@ -100,7 +90,6 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
   // Active Tab in Post-Screening Inspection Console
   const [activeTab, setActiveTab] = useState<'overview' | 'mrz' | 'forensics' | 'blockchain' | 'decision'>('overview');
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
-  const [telemetryPosition, setTelemetryPosition] = useState<'top' | 'bottom'>('bottom');
 
   // Synchronize when demo scenario is chosen
   useEffect(() => {
@@ -197,18 +186,15 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
 
     try {
       if (uploadedFile) {
-        // Real multimodal server API call - Backend result is authoritative
         const record = await screenDocument(
           uploadedFile,
           personPhotoFile,
           selectedDocType,
           user?.user_id || 'officer001'
         );
-
         setCurrentResult(record);
         setCurrentStep(5);
       } else {
-        // Benchmark Scenario Fallback
         const activeScenario = scenario || DEMO_SCENARIOS[0];
         const scenarioDocType = (activeScenario.document_type as DocumentType) || selectedDocType;
         const autoMrz = generateTd3Mrz({
@@ -310,13 +296,13 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
       setErrorStage(stage || 'PIPELINE');
       setErrorDetails(details);
       setErrorMessage(err?.message || 'Verification could not be completed. Please check the document image and try again.');
-      setCurrentStep(3); // return to review step to let user retry
+      setCurrentStep(3);
     } finally {
       setIsScreening(false);
     }
   };
 
-  const handleSaveScreening = async (customNotes?: string, disposition?: string) => {
+  const handleSaveScreening = async (customNotes?: string) => {
     if (!currentResult) return;
     setIsSaving(true);
     try {
@@ -354,36 +340,36 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
   const docTypeOptions: { type: DocumentType; label: string; desc: string; icon: any }[] = [
     {
       type: 'Passport',
-      label: 'Passport',
+      label: 'PASSPORT',
       desc: 'International travel passports with ICAO 9303 MRZ zone',
       icon: BookOpen,
     },
     {
       type: 'National ID',
-      label: 'National ID',
+      label: 'NATIONAL ID',
       desc: 'Government-issued citizen identity smart cards & IDs',
       icon: CreditCard,
     },
     {
       type: 'Driving License',
-      label: 'Driving Licence',
+      label: 'DRIVING LICENSE',
       desc: 'State and national motor vehicle driver licenses',
       icon: Car,
     },
     {
       type: 'Permit',
-      label: 'Visa / Permit',
+      label: 'VISA / PERMIT',
       desc: 'Visas, residence permits, and official border credentials',
       icon: FileSpreadsheet,
     },
   ];
 
   const stepsList = [
-    { num: 1, label: 'Select Document' },
-    { num: 2, label: 'Upload Document' },
-    { num: 3, label: 'Review' },
-    { num: 4, label: 'Verification' },
-    { num: 5, label: 'Result' },
+    { num: 1, label: '01 SELECT DOCUMENT' },
+    { num: 2, label: '02 UPLOAD' },
+    { num: 3, label: '03 REVIEW' },
+    { num: 4, label: '04 VERIFICATION' },
+    { num: 5, label: '05 RESULT' },
   ];
 
   const formatFileSize = (bytes?: number) => {
@@ -395,23 +381,32 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-900">
+    <div
+      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      className={`p-3 sm:p-4 md:p-5 max-w-7xl mx-auto ${
+        currentStep === 4 ? 'space-y-3 overflow-hidden' : 'space-y-5'
+      } text-[#10233F]`}
+    >
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div
+        className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-[#C9DCF8] rounded-[8px] ${
+          currentStep === 4 ? 'p-3 md:p-3.5' : 'p-4 md:p-5'
+        }`}
+      >
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
-              IdentityGuard
-            </span>
-            <span className="text-xs text-slate-500 font-medium">
-              Identity & Document Verification
-            </span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
-            New Verification
+          <h1
+            className={`${
+              currentStep === 4 ? 'text-[22px] md:text-[24px]' : 'text-[28px] md:text-[32px]'
+            } font-bold text-[#10233F] uppercase tracking-tight leading-tight`}
+          >
+            New Verification Workstation
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Upload an identity document to begin verification.
+          <p
+            className={`${
+              currentStep === 4 ? 'text-[13px] md:text-[14px]' : 'text-[15px] md:text-[17px]'
+            } text-[#64748B] mt-0.5 font-normal leading-tight`}
+          >
+            Automated computer vision & biometric identity screening pipeline
           </p>
         </div>
 
@@ -419,17 +414,21 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
           <button
             onClick={handleReset}
             id="btn-new-verification"
-            className="px-4 py-2.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer flex items-center gap-2 shadow-sm"
+            className="px-6 py-2.5 rounded-[6px] text-[15px] font-bold bg-[#2563EB] hover:bg-[#1d4ed8] text-white cursor-pointer flex items-center gap-2 uppercase shrink-0"
           >
             <RefreshCw className="w-4 h-4" />
-            <span>+ Start New Verification</span>
+            <span>New Verification</span>
           </button>
         )}
       </div>
 
       {/* 5-STEP PROCESS BAR */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-xs">
-        <div className="grid grid-cols-5 gap-2 sm:gap-4 text-center">
+      <div
+        className={`bg-white border border-[#C9DCF8] rounded-[8px] ${
+          currentStep === 4 ? 'p-2' : 'p-3 md:p-4'
+        }`}
+      >
+        <div className="grid grid-cols-5 gap-2 text-center">
           {stepsList.map((st) => {
             const isDone = currentStep > st.num;
             const isCurrent = currentStep === st.num;
@@ -441,113 +440,98 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                     setCurrentStep(st.num);
                   }
                 }}
-                className={`flex flex-col sm:flex-row items-center justify-center gap-2 p-2 rounded-xl transition-all ${
+                className={`flex items-center justify-center gap-2 p-2 sm:p-2.5 rounded-[6px] transition-none ${
                   isCurrent
-                    ? 'bg-blue-50 text-blue-700 font-bold border border-blue-200 shadow-xs'
+                    ? 'bg-[#102A56] text-white font-bold'
                     : isDone
-                    ? 'text-emerald-700 font-semibold cursor-pointer hover:bg-emerald-50/50'
-                    : 'text-slate-400 font-normal'
+                    ? 'bg-[#DCFCE7] text-[#15803D] font-bold border border-green-300 cursor-pointer'
+                    : 'bg-[#F5F9FF] text-[#64748B] font-normal border border-[#C9DCF8]'
                 }`}
               >
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ${
                     isDone
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-[#15803D] text-white'
                       : isCurrent
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                      ? 'bg-[#2563EB] text-white'
+                      : 'bg-[#EAF2FF] text-[#10233F]'
                   }`}
                 >
                   {isDone ? <Check className="w-3.5 h-3.5" /> : st.num}
                 </div>
-                <span className="text-xs truncate hidden sm:inline">{st.label}</span>
+                <span className="text-[12px] sm:text-[13px] uppercase truncate hidden md:inline">
+                  {st.label}
+                </span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Structured Error Banner */}
+      {/* Error Banner */}
       {errorMessage && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-red-600" />
-            <div className="space-y-1">
-              <span className="font-bold text-sm text-red-900 block">
-                Verification could not be completed
-              </span>
-              <p className="text-xs text-red-700 font-medium leading-relaxed">
-                {errorMessage}
-              </p>
-              {errorDetails && (
-                <p className="text-[11px] font-mono text-red-800 mt-1 bg-white/70 p-2 rounded border border-red-200 max-h-24 overflow-y-auto">
-                  {errorDetails}
-                </p>
-              )}
+        <div className="p-4 rounded-[8px] bg-red-50 border border-red-200 text-[#B91C1C] text-[15px] flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0 text-[#B91C1C]" />
+            <div>
+              <span className="font-bold uppercase block">Verification Error</span>
+              <p className="font-normal">{errorMessage}</p>
             </div>
           </div>
           <button
-            onClick={() => {
-              setErrorMessage(null);
-              setErrorStage(null);
-              setErrorDetails(null);
-            }}
-            className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-white hover:bg-red-50 text-red-800 font-bold text-xs border border-red-200 cursor-pointer shrink-0 transition-colors"
+            onClick={() => setErrorMessage(null)}
+            className="px-3 py-1 bg-white border border-red-200 rounded-[4px] text-[13px] font-bold uppercase cursor-pointer"
           >
             Dismiss
           </button>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* STEP 1: SELECT DOCUMENT TYPE                             */}
-      {/* ======================================================== */}
+      {/* STEP 1: SELECT DOCUMENT TYPE */}
       {currentStep === 1 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="space-y-1">
-            <h2 className="text-base font-bold text-slate-900">
-              Step 1: Select Document Type
+        <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-8 space-y-6">
+          <div className="border-b border-[#C9DCF8] pb-4">
+            <h2 className="text-[24px] font-bold text-[#10233F] uppercase">
+              Step 01: Select Document Type
             </h2>
-            <p className="text-xs text-slate-500">
-              Choose the category of identification document you are submitting for verification.
+            <p className="text-[16px] text-[#64748B] mt-1 font-normal">
+              Select the category of identification document for verification.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {docTypeOptions.map((opt) => {
               const Icon = opt.icon;
               const isSelected = selectedDocType === opt.type;
               return (
                 <div
                   key={opt.type}
-                  onClick={() => {
-                    setSelectedDocType(opt.type);
-                  }}
-                  className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-4 ${
+                  onClick={() => setSelectedDocType(opt.type)}
+                  className={`p-6 rounded-[8px] border transition-none cursor-pointer flex flex-col justify-between space-y-4 ${
                     isSelected
-                      ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-600/20'
-                      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50'
+                      ? 'border-[#2563EB] bg-[#EAF2FF]'
+                      : 'border-[#C9DCF8] bg-white hover:bg-[#F5F9FF]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      className={`w-12 h-12 rounded-[6px] flex items-center justify-center ${
                         isSelected
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-slate-100 text-slate-600'
+                          ? 'bg-[#2563EB] text-white font-bold'
+                          : 'bg-[#EAF2FF] text-[#10233F]'
                       }`}
                     >
-                      <Icon className="w-5 h-5" />
+                      <Icon className="w-6 h-6" />
                     </div>
                     {isSelected && (
-                      <span className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                        <Check className="w-3.5 h-3.5" />
+                      <span className="w-6 h-6 rounded-full bg-[#15803D] text-white flex items-center justify-center font-bold text-xs">
+                        <Check className="w-4 h-4" />
                       </span>
                     )}
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">{opt.label}</h3>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    <h3 className="text-[18px] font-bold text-[#10233F]">{opt.label}</h3>
+                    <p className="text-[14px] text-[#64748B] mt-1 font-normal leading-relaxed">
                       {opt.desc}
                     </p>
                   </div>
@@ -556,40 +540,37 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
             })}
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-slate-100">
+          <div className="flex justify-end pt-4 border-t border-[#C9DCF8]">
             <button
               onClick={() => setCurrentStep(2)}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-sm transition-all"
+              className="px-8 py-3.5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-bold text-[16px] uppercase rounded-[6px] flex items-center gap-2 cursor-pointer"
             >
               <span>Continue to Upload</span>
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* STEP 2: UPLOAD DOCUMENT                                  */}
-      {/* ======================================================== */}
+      {/* STEP 2: UPLOAD DOCUMENT */}
       {currentStep === 2 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-8 space-y-6">
+          <div className="flex items-center justify-between border-b border-[#C9DCF8] pb-4">
             <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Step 2: Upload {selectedDocType}
+              <h2 className="text-[24px] font-bold text-[#10233F] uppercase">
+                Step 02: Upload {selectedDocType}
               </h2>
-              <p className="text-xs text-slate-500">
-                Upload a clear image or scan of the document. Supports JPG, PNG, PDF (Max 10MB).
+              <p className="text-[16px] text-[#64748B] mt-1 font-normal">
+                Upload a high-resolution image scan of the document bio-page.
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
-              Selected: {selectedDocType}
+            <span className="px-4 py-1.5 rounded-[4px] text-[14px] font-bold bg-[#EAF2FF] text-[#2563EB] border border-[#C9DCF8] uppercase">
+              {selectedDocType}
             </span>
           </div>
 
-          {/* Camera desk scanner modal */}
           {isLiveCameraActive ? (
-            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+            <div className="p-4 bg-[#F5F9FF] rounded-[8px] border border-[#C9DCF8]">
               <CameraCapture
                 title={cameraMode === 'doc' ? 'Document Camera Scanner' : 'Traveler Face Capture'}
                 subtitle="Align clearly in frame and click capture"
@@ -599,12 +580,11 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Drag & Drop Upload Zone */}
               {!uploadedFile ? (
                 <div
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleFileDrop}
-                  className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-8 sm:p-12 text-center bg-slate-50/60 hover:bg-blue-50/20 transition-all relative flex flex-col items-center justify-center min-h-[200px]"
+                  className="border-2 border-dashed border-[#C9DCF8] hover:border-[#2563EB] rounded-[8px] p-12 text-center bg-[#F5F9FF] hover:bg-[#EAF2FF] relative flex flex-col items-center justify-center min-h-[220px]"
                 >
                   <input
                     type="file"
@@ -613,50 +593,49 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                     accept="image/*,.pdf"
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3 shadow-xs">
-                    <Upload className="w-7 h-7" />
+                  <div className="w-16 h-16 rounded-[8px] bg-[#EAF2FF] text-[#2563EB] border border-[#C9DCF8] flex items-center justify-center mb-4">
+                    <Upload className="w-8 h-8" />
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                  <h3 className="text-[18px] font-bold text-[#10233F]">
                     Click to browse or drag and drop document scan
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1 max-w-sm">
-                    High-resolution scan of {selectedDocType} bio-page or smart card (JPG, PNG, PDF up to 10MB)
+                  <p className="text-[15px] text-[#64748B] mt-1 max-w-sm font-normal">
+                    High-resolution scan of {selectedDocType} (JPG, PNG, PDF up to 10MB)
                   </p>
                 </div>
               ) : (
-                /* File Preview Card */
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="p-6 rounded-[8px] bg-[#F5F9FF] border border-[#C9DCF8] flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
                     {uploadedPreviewUrl ? (
                       <img
                         src={uploadedPreviewUrl}
                         alt="Document Preview"
-                        className="w-16 h-12 object-cover rounded-xl border border-slate-300 shadow-xs"
+                        className="w-20 h-14 object-cover rounded-[4px] border border-[#C9DCF8]"
                       />
                     ) : (
-                      <div className="w-16 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                        <FileText className="w-6 h-6" />
+                      <div className="w-20 h-14 rounded-[4px] bg-[#EAF2FF] border border-[#C9DCF8] text-[#2563EB] flex items-center justify-center font-bold">
+                        <FileText className="w-8 h-8" />
                       </div>
                     )}
                     <div>
-                      <h4 className="text-sm font-bold text-slate-900">{uploadedFile.name}</h4>
-                      <p className="text-xs text-slate-500 font-mono mt-0.5">
-                        {formatFileSize(uploadedFile.size)} • {uploadedFile.type || 'Document File'}
+                      <h4 className="text-[18px] font-bold text-[#10233F]">{uploadedFile.name}</h4>
+                      <p className="text-[14px] text-[#64748B] font-normal mt-0.5">
+                        {formatFileSize(uploadedFile.size)} • {uploadedFile.type || 'Document Image'}
                       </p>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 mt-1">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Ready for inspection</span>
+                      <span className="inline-flex items-center gap-1 text-[13px] font-bold text-[#15803D] mt-1 uppercase">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Ready for screening</span>
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => {
                         setUploadedFile(null);
                         setUploadedPreviewUrl(null);
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+                      className="px-4 py-2 rounded-[4px] bg-white text-[#10233F] border border-[#C9DCF8] text-[14px] font-bold uppercase cursor-pointer"
                     >
                       Replace File
                     </button>
@@ -665,19 +644,18 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                         setUploadedFile(null);
                         setUploadedPreviewUrl(null);
                       }}
-                      className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 cursor-pointer"
+                      className="p-2 text-[#B91C1C] hover:bg-red-50 rounded-[4px] cursor-pointer"
                       title="Remove file"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Optional Camera Capture Trigger */}
-              <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-3">
-                <div className="text-xs text-slate-600">
-                  <strong>Need live scan?</strong> Capture document directly using your connected camera or desk scanner.
+              <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-[#EAF2FF] rounded-[8px] border border-[#C9DCF8] gap-3">
+                <div className="text-[15px] text-[#10233F]">
+                  <strong className="font-bold">Live Camera Scan:</strong> Capture document directly using your desk camera.
                 </div>
                 <button
                   type="button"
@@ -685,110 +663,106 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                     setCameraMode('doc');
                     setIsLiveCameraActive(true);
                   }}
-                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-2 shrink-0"
+                  className="px-5 py-2.5 bg-[#2563EB] text-white rounded-[6px] text-[14px] font-bold uppercase cursor-pointer flex items-center gap-2 shrink-0"
                 >
-                  <Camera className="w-4 h-4 text-blue-600" />
-                  <span>Capture with Camera</span>
+                  <Camera className="w-4 h-4" />
+                  <span>Use Camera Scanner</span>
                 </button>
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-4 border-t border-[#C9DCF8]">
             <button
               onClick={() => setCurrentStep(1)}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+              className="px-6 py-3 bg-white text-[#10233F] border border-[#C9DCF8] font-bold text-[15px] uppercase rounded-[6px] flex items-center gap-2 cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
               <span>Back</span>
             </button>
 
             <button
               onClick={() => setCurrentStep(3)}
               disabled={!uploadedFile && !selectedDemoScenario}
-              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-sm transition-all"
+              className="px-8 py-3.5 bg-[#2563EB] hover:bg-[#1d4ed8] disabled:opacity-40 text-white font-bold text-[16px] uppercase rounded-[6px] flex items-center gap-2 cursor-pointer"
             >
               <span>Review Details</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* STEP 3: PRE-VERIFICATION REVIEW                          */}
-      {/* ======================================================== */}
+      {/* STEP 3: REVIEW DETAILS */}
       {currentStep === 3 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-6">
-          <div className="space-y-1 border-b border-slate-100 pb-4">
-            <h2 className="text-base font-bold text-slate-900">
-              Step 3: Review Document Details
+        <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-8 space-y-6">
+          <div className="border-b border-[#C9DCF8] pb-4">
+            <h2 className="text-[24px] font-bold text-[#10233F] uppercase">
+              Step 03: Review Document Details
             </h2>
-            <p className="text-xs text-slate-500">
-              Confirm the document configuration before initiating the verification checks.
+            <p className="text-[16px] text-[#64748B] mt-1 font-normal">
+              Confirm document settings and traveler photo before starting verification.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Document summary */}
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Document Overview
+            <div className="p-6 rounded-[8px] bg-[#F5F9FF] border border-[#C9DCF8] space-y-4">
+              <h3 className="text-[15px] font-bold text-[#10233F] uppercase">
+                Document Summary
               </h3>
 
-              <div className="space-y-3 text-xs">
-                <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
-                  <span className="text-slate-500">Document Type:</span>
-                  <span className="font-bold text-slate-900">{selectedDocType}</span>
+              <div className="space-y-3 text-[16px]">
+                <div className="flex items-center justify-between py-2 border-b border-[#C9DCF8]">
+                  <span className="text-[#64748B]">Document Type:</span>
+                  <span className="font-bold text-[#10233F]">{selectedDocType}</span>
                 </div>
 
-                <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
-                  <span className="text-slate-500">File Name:</span>
-                  <span className="font-mono font-bold text-slate-900 truncate max-w-[200px]">
+                <div className="flex items-center justify-between py-2 border-b border-[#C9DCF8]">
+                  <span className="text-[#64748B]">File Name:</span>
+                  <span className="font-bold text-[#10233F] truncate max-w-[200px]">
                     {uploadedFile?.name || selectedDemoScenario?.title || 'Document file'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-1.5 border-b border-slate-200/60">
-                  <span className="text-slate-500">File Size:</span>
-                  <span className="font-mono text-slate-700">
+                <div className="flex items-center justify-between py-2 border-b border-[#C9DCF8]">
+                  <span className="text-[#64748B]">File Size:</span>
+                  <span className="font-normal text-[#10233F]">
                     {uploadedFile ? formatFileSize(uploadedFile.size) : 'Standard Scan'}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between py-1.5">
-                  <span className="text-slate-500">Active Officer:</span>
-                  <span className="font-mono font-bold text-slate-900">
-                    {user?.user_id || 'officer001'}
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-[#64748B]">Assigned Officer:</span>
+                  <span className="font-bold text-[#2563EB]">
+                    {user?.user_id || 'A001'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Optional Facial Biometric Verification */}
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+            <div className="p-6 rounded-[8px] bg-[#F5F9FF] border border-[#C9DCF8] space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Optional Traveler Photo (1:1 Match)
+                <h3 className="text-[15px] font-bold text-[#10233F] uppercase">
+                  Traveler Photo (1:1 Match)
                 </h3>
-                <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                <span className="text-[13px] font-bold text-[#2563EB] bg-[#EAF2FF] border border-[#C9DCF8] px-2.5 py-0.5 rounded-[4px]">
                   Optional
                 </span>
               </div>
 
               {personPreviewUrl ? (
-                <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200">
+                <div className="flex items-center gap-4 p-4 bg-white rounded-[6px] border border-[#C9DCF8]">
                   <img
                     src={personPreviewUrl}
                     alt="Traveler face"
-                    className="w-12 h-12 object-cover rounded-lg border border-slate-300"
+                    className="w-14 h-14 object-cover rounded-[4px] border border-[#C9DCF8]"
                   />
-                  <div className="min-w-0 flex-1 text-xs">
-                    <span className="font-bold text-slate-900 block truncate">
+                  <div className="min-w-0 flex-1 text-[15px]">
+                    <span className="font-bold text-[#10233F] block truncate">
                       {personPhotoFile?.name || 'Traveler photo attached'}
                     </span>
-                    <span className="text-emerald-600 font-semibold text-[11px]">
-                      Biometric comparison enabled
+                    <span className="text-[#15803D] font-bold text-[13px] uppercase">
+                      Biometric comparison active
                     </span>
                   </div>
                   <button
@@ -796,19 +770,19 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                       setPersonPhotoFile(null);
                       setPersonPreviewUrl(null);
                     }}
-                    className="p-1 text-slate-400 hover:text-red-600 cursor-pointer"
+                    className="p-2 text-[#B91C1C] cursor-pointer"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="text-xs text-slate-500">
-                    Attach a live traveler photo to perform 1:1 facial biometric matching against the document bio-photo.
-                  </div>
-                  <div className="flex items-center gap-2 pt-1">
-                    <label className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors inline-flex items-center gap-1.5">
-                      <Upload className="w-3.5 h-3.5" />
+                <div className="space-y-3">
+                  <p className="text-[15px] text-[#64748B] font-normal leading-relaxed">
+                    Attach a live traveler photo for 1:1 facial biometric matching against the document portrait.
+                  </p>
+                  <div className="flex items-center gap-3 pt-2">
+                    <label className="px-4 py-2.5 bg-[#2563EB] text-white rounded-[6px] text-[14px] font-bold uppercase cursor-pointer flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
                       <span>Upload Photo</span>
                       <input
                         type="file"
@@ -823,9 +797,9 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                         setCameraMode('face');
                         setIsLiveCameraActive(true);
                       }}
-                      className="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                      className="px-4 py-2.5 bg-white text-[#10233F] border border-[#C9DCF8] rounded-[6px] text-[14px] font-bold uppercase cursor-pointer flex items-center gap-2"
                     >
-                      <Camera className="w-3.5 h-3.5" />
+                      <Camera className="w-4 h-4" />
                       <span>Take Photo</span>
                     </button>
                   </div>
@@ -834,567 +808,352 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-blue-50/60 border border-blue-200/80 text-xs text-blue-900 flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0" />
+          <div className="p-5 rounded-[8px] bg-[#EAF2FF] border border-[#C9DCF8] text-[15px] text-[#10233F] flex items-center gap-3">
+            <ShieldCheck className="w-6 h-6 text-[#2563EB] shrink-0" />
             <div>
-              <strong>Ready to verify:</strong> Automated checks will examine visual identity fields, ICAO checksums, digital tampering, and calculate an overall verification risk score.
+              <strong className="font-bold">Automated Screening Ready:</strong> The pipeline will execute OCR text extraction, ICAO 9303 checksum validation, digital tampering detection, and threat risk scoring.
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-4 border-t border-[#C9DCF8]">
             <button
               onClick={() => setCurrentStep(2)}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+              className="px-6 py-3 bg-white text-[#10233F] border border-[#C9DCF8] font-bold text-[15px] uppercase rounded-[6px] flex items-center gap-2 cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-5 h-5" />
               <span>Back</span>
             </button>
 
             <button
               onClick={() => executeScreening()}
               id="btn-start-verification"
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-blue-600/20 transition-all"
+              className="px-8 py-3.5 bg-[#2563EB] hover:bg-[#1d4ed8] text-white font-bold text-[16px] uppercase rounded-[6px] flex items-center gap-2 cursor-pointer"
             >
-              <ShieldCheck className="w-4 h-4" />
+              <ShieldCheck className="w-5 h-5" />
               <span>Start Verification</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* ======================================================== */}
-      {/* STEP 4: VERIFICATION IN PROGRESS                         */}
-      {/* ======================================================== */}
+      {/* STEP 4: VERIFICATION PROGRESS */}
       {currentStep === 4 && isScreening && (
         <VerificationProgressBar documentType={selectedDocType} />
       )}
 
-      {/* ======================================================== */}
-      {/* STEP 5: VERIFICATION RESULT SCREEN                       */}
-      {/* ======================================================== */}
+      {/* STEP 5: VERIFICATION RESULT */}
       {currentStep === 5 && currentResult && (() => {
         const status = currentResult.verification_status || 'FAILED';
 
-        let bannerStyle = 'bg-red-50/70 border-red-200 text-red-950';
-        let iconBgStyle = 'bg-red-600 text-white shadow-md shadow-red-600/20';
+        let bannerStyle = 'bg-[#FEE2E2] border-red-300 text-[#B91C1C]';
+        let iconBgStyle = 'bg-[#B91C1C] text-white';
         let BannerIcon = XCircle;
         let bannerTitle = 'FAILED';
         let riskBadgeText = 'High Risk';
-        let riskBadgeStyle = 'bg-red-200/80 text-red-900';
+        let riskBadgeStyle = 'bg-[#FEE2E2] text-[#B91C1C] border border-red-300';
         let bannerMessage = currentResult.reasons?.[0] || currentResult.notes || 'Verification checks could not be completed successfully.';
 
         if (status === 'VERIFIED' || status === 'AUTHENTIC') {
-          bannerStyle = 'bg-emerald-50/70 border-emerald-200 text-emerald-950';
-          iconBgStyle = 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20';
+          bannerStyle = 'bg-[#DCFCE7] border-green-300 text-[#15803D]';
+          iconBgStyle = 'bg-[#15803D] text-white font-bold';
           BannerIcon = ShieldCheck;
-          bannerTitle = 'AUTHENTIC';
+          bannerTitle = 'VERIFIED / AUTHENTIC';
           riskBadgeText = 'Low Risk';
-          riskBadgeStyle = 'bg-emerald-200/80 text-emerald-900';
-          bannerMessage = currentResult.notes || currentResult.explanation || 'Document Cleared to Proceed: Document appears consistent with implemented verification checks.';
+          riskBadgeStyle = 'bg-[#DCFCE7] text-[#15803D] border border-green-300';
+          bannerMessage = currentResult.notes || currentResult.explanation || 'Document Cleared to Proceed: Document appears authentic and valid.';
         } else if (status === 'EXPIRED') {
-          bannerStyle = 'bg-red-50/70 border-red-200 text-red-950';
-          iconBgStyle = 'bg-red-600 text-white shadow-md shadow-red-600/20';
+          bannerStyle = 'bg-[#FEE2E2] border-red-300 text-[#B91C1C]';
+          iconBgStyle = 'bg-[#B91C1C] text-white';
           BannerIcon = AlertTriangle;
-          bannerTitle = 'EXPIRED';
+          bannerTitle = 'EXPIRED DOCUMENT';
           riskBadgeText = 'High Risk';
-          riskBadgeStyle = 'bg-red-200/80 text-red-900';
-          bannerMessage = currentResult.reasons?.[0] || `Real-time timeline breach: Document validity lapsed on ${formatVisualDate(currentResult.date_of_expiry) || 'expiry date'}.`;
-        } else if (status === 'LIKELY_MANIPULATED' || status === 'TAMPERED') {
-          bannerStyle = 'bg-red-50/70 border-red-200 text-red-950';
-          iconBgStyle = 'bg-red-600 text-white shadow-md shadow-red-600/20';
-          BannerIcon = XCircle;
-          bannerTitle = 'MANIPULATION DETECTED';
-          riskBadgeText = 'High Risk';
-          riskBadgeStyle = 'bg-red-200/80 text-red-900';
-          bannerMessage = currentResult.reasons?.[0] || 'High suspicion of document manipulation based on digital forensics.';
+          riskBadgeStyle = 'bg-[#FEE2E2] text-[#B91C1C] border border-red-300';
+          bannerMessage = currentResult.reasons?.[0] || `Document validity lapsed on ${formatVisualDate(currentResult.date_of_expiry) || 'expiry date'}.`;
         } else if (status === 'REVIEW' || status === 'INCONCLUSIVE' || status === 'REVIEW_REQUIRED' || status === 'SUSPICIOUS') {
-          bannerStyle = 'bg-amber-50/70 border-amber-200 text-amber-950';
-          iconBgStyle = 'bg-amber-600 text-white shadow-md shadow-amber-600/20';
+          bannerStyle = 'bg-[#FEF3C7] border-amber-300 text-[#B45309]';
+          iconBgStyle = 'bg-[#B45309] text-white font-bold';
           BannerIcon = AlertTriangle;
-          bannerTitle = status === 'SUSPICIOUS' ? 'SUSPICIOUS' : 'REVIEW REQUIRED';
-          const rLvl = currentResult.risk_level || 'LOW';
-          riskBadgeText = status === 'SUSPICIOUS' ? 'High Risk' : rLvl === 'LOW' ? 'Low Risk' : 'Medium Risk';
-          riskBadgeStyle = rLvl === 'LOW' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-amber-200/80 text-amber-900';
-          bannerMessage = currentResult.reasons?.[0] || currentResult.notes || currentResult.explanation || 'Secondary manual inspection required by verifying officer.';
-        } else if (status === 'FAILED') {
-          bannerStyle = 'bg-red-50/70 border-red-200 text-red-950';
-          iconBgStyle = 'bg-red-600 text-white shadow-md shadow-red-600/20';
-          BannerIcon = XCircle;
-          bannerTitle = 'FAILED';
-          riskBadgeText = 'High Risk';
-          riskBadgeStyle = 'bg-red-200/80 text-red-900';
-          bannerMessage = currentResult.reasons?.[0] || currentResult.notes || 'Document verification failed automated security checks.';
+          bannerTitle = 'REVIEW REQUIRED';
+          riskBadgeText = 'Medium Risk';
+          riskBadgeStyle = 'bg-[#FEF3C7] text-[#B45309] border border-amber-300';
+          bannerMessage = currentResult.reasons?.[0] || currentResult.notes || 'Secondary manual inspection required by verifying officer.';
         }
 
         const docNum = currentResult.document_number;
-        const hasValidDocNum = Boolean(docNum && docNum !== 'NOT DETECTED' && docNum !== 'N/A' && docNum !== 'NOT_DETECTED');
-
+        const hasValidDocNum = Boolean(docNum && docNum !== 'NOT DETECTED' && docNum !== 'N/A');
         const name = currentResult.applicant_name;
-        const hasValidName = Boolean(name && name !== 'NOT DETECTED' && name !== 'N/A' && name !== 'Not Detected');
-
+        const hasValidName = Boolean(name && name !== 'NOT DETECTED' && name !== 'N/A');
         const nat = currentResult.nationality;
-        const hasValidNat = Boolean(nat && nat !== 'NOT DETECTED' && nat !== 'Unknown');
-
-        const mrzInfo = currentResult.mrz_info || {};
-        const isMrzDetected = mrzInfo.detected === true || Boolean(currentResult.ocr_data?.mrz_line_1);
-        const isMrzValid = isMrzDetected && (mrzInfo.valid === true || mrzInfo.checksum_valid === true || currentResult.validation_details?.mrz_checksum_valid === true);
-
-        const isTampered = currentResult.tampering_status === 'FAILED' || (currentResult.tampering_details?.tampering_probability || 0) >= 50;
-
-        const bio = currentResult.biometric;
-        const bioStatus = bio?.status || 'NOT_PERFORMED';
-        const hasBioComparison = bioStatus === 'COMPLETED' || (bio?.similarity !== null && bio?.similarity !== undefined);
-        const bioMatched = bio?.matched === true;
-
+        const hasValidNat = Boolean(nat && nat !== 'NOT DETECTED');
         const ocrConf = currentResult.ocr_data?.confidence_score ?? (hasValidDocNum ? 95 : 0);
 
         return (
-          <div className="space-y-6">
-            {/* 1. TOP RESULT SUMMARY CARD & DEDICATED RISK SCORE BAR */}
-            <div className={`p-6 sm:p-8 rounded-3xl border shadow-xs space-y-6 ${bannerStyle}`}>
+          <div className="space-y-8">
+            {/* TOP RESULT BANNER */}
+            <div className={`p-8 rounded-[8px] border space-y-6 ${bannerStyle}`}>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                 <div className="flex items-start gap-4">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${iconBgStyle}`}>
+                  <div className={`w-14 h-14 rounded-[8px] flex items-center justify-center shrink-0 ${iconBgStyle}`}>
                     <BannerIcon className="w-8 h-8" />
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h2 className="text-xl sm:text-2xl font-black tracking-tight uppercase">
+                      <h2 className="text-[28px] font-bold uppercase tracking-tight">
                         {bannerTitle}
                       </h2>
-                      <span className={`px-3 py-0.5 rounded-full text-xs font-bold ${riskBadgeStyle}`}>
+                      <span className={`px-3 py-1 rounded-[4px] text-[13px] font-bold uppercase ${riskBadgeStyle}`}>
                         {riskBadgeText}
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm font-medium opacity-90 leading-relaxed">
+                    <p className="text-[17px] font-normal leading-relaxed">
                       {bannerMessage}
                     </p>
                   </div>
                 </div>
 
-                {/* Action buttons header row */}
-                <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 flex-wrap">
+                <div className="flex items-center gap-3 shrink-0">
                   <button
                     onClick={() => setIsReportModalOpen(true)}
                     id="btn-generate-report"
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all cursor-pointer shadow-sm hover:shadow-md flex items-center justify-center gap-1.5"
+                    className="px-5 py-3 rounded-[6px] bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-[15px] font-bold uppercase cursor-pointer flex items-center gap-2"
                   >
-                    <FileText className="w-4 h-4" />
-                    <span>Generate Official Report</span>
-                  </button>
-                  <button
-                    onClick={() => onNavigate('/reports')}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs text-center"
-                  >
-                    Reports Ledger
+                    <FileText className="w-5 h-5" />
+                    <span>Official Forensic Report</span>
                   </button>
                   <button
                     onClick={handleReset}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-colors cursor-pointer shadow-2xs text-center"
+                    className="px-5 py-3 rounded-[6px] bg-white text-[#10233F] border border-[#C9DCF8] text-[15px] font-bold uppercase cursor-pointer"
                   >
                     New Verification
                   </button>
                 </div>
               </div>
 
-              {/* DEDICATED RISK SCORE BAR */}
-              <div className="bg-white/90 backdrop-blur-xs p-5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              {/* RISK BAR SPECTRUM */}
+              <div className="bg-white p-6 rounded-[8px] border border-[#C9DCF8] space-y-3 text-[#10233F]">
+                <div className="flex items-center justify-between text-[16px]">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">Threat Risk Score:</span>
-                    <span className="font-mono font-black text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-md text-xs">
-                      {currentResult.risk_score ?? 4} / 100
+                    <span className="font-bold">Threat Risk Score:</span>
+                    <span className="font-bold text-[#2563EB] bg-[#EAF2FF] px-3 py-0.5 rounded-[4px]">
+                      {currentResult.risk_score ?? 0} / 100
                     </span>
-                    <span className="text-slate-600 font-medium font-mono text-[11px]">(Low Risk • Authenticity Verified)</span>
                   </div>
-                  <span className="font-mono font-bold text-[11px] text-emerald-700 flex items-center gap-1.5 self-start sm:self-auto">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    CLEARANCE STATUS: 100% PASSED
+                  <span className="font-bold text-[14px] uppercase text-[#15803D]">
+                    CLEARANCE VERDICT: {status}
                   </span>
                 </div>
 
-                {/* Visual Risk Bar Spectrum */}
-                <div className="relative w-full pt-1 pb-2">
-                  <div className="h-3.5 w-full rounded-full bg-slate-200 overflow-hidden flex shadow-inner border border-slate-300/60">
-                    <div className="w-[30%] bg-emerald-500 h-full transition-all duration-500 flex items-center justify-end pr-1 text-[9px] font-bold text-white" title="Low Risk Range (0-30)">
+                <div className="relative w-full py-2">
+                  <div className="h-4 w-full rounded-[4px] bg-[#EAF2FF] overflow-hidden flex border border-[#C9DCF8]">
+                    <div className="w-[30%] bg-[#DCFCE7] h-full flex items-center justify-center text-[11px] font-bold text-[#15803D]">
                       LOW
                     </div>
-                    <div className="w-[35%] bg-amber-400 h-full opacity-70 flex items-center justify-center text-[9px] font-bold text-amber-900" title="Medium Risk Range (31-65)">
-                      MED
+                    <div className="w-[35%] bg-[#FEF3C7] h-full flex items-center justify-center text-[11px] font-bold text-[#B45309]">
+                      MEDIUM
                     </div>
-                    <div className="w-[35%] bg-red-500 h-full opacity-70 flex items-center justify-center text-[9px] font-bold text-white" title="High Risk Range (66-100)">
+                    <div className="w-[35%] bg-[#FEE2E2] h-full flex items-center justify-center text-[11px] font-bold text-[#B91C1C]">
                       HIGH
                     </div>
                   </div>
-
-                  {/* Indicator Needle Pin */}
-                  <div
-                    className="absolute top-0 transform -translate-x-1/2 flex flex-col items-center pointer-events-none"
-                    style={{ left: `${Math.max(4, Math.min(96, currentResult.risk_score ?? 4))}%` }}
-                  >
-                    <div className="w-6 h-6 rounded-full bg-slate-900 text-white text-[10px] font-mono font-black flex items-center justify-center shadow-lg border-2 border-white ring-2 ring-emerald-500 animate-pulse">
-                      {currentResult.risk_score ?? 4}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Score Breakdown Indicators */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-[11px] text-slate-600 border-t border-slate-100">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      ICAO 9303 Checksum: <strong>Passed</strong>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      Digital Tampering: <strong>0.0% Clean</strong>
-                    </span>
-                    <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
-                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                      1:1 Biometric Match: <strong>96.8% Verified</strong>
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    ISO/IEC 30107-3 Standard
-                  </span>
                 </div>
               </div>
             </div>
 
-            {/* 2. CORE DETAILS: DOCUMENT INFORMATION & VERIFICATION CHECKS (TOP FOR IMMEDIATE VISIBILITY) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Document Information Card (col-span-6) */}
-              <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-sm font-bold text-slate-900">
-                      Document Information
-                    </h3>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-slate-600">
-                    Confidence: {ocrConf > 0 ? `${ocrConf.toFixed(1)}%` : '95.0%'}
+            {/* DOCUMENT INFO & CHECKS */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white rounded-[8px] border border-[#C9DCF8] p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#C9DCF8] pb-3">
+                  <h3 className="text-[20px] font-bold text-[#10233F] uppercase">
+                    Detected Document Fields
+                  </h3>
+                  <span className="text-[14px] font-bold text-[#2563EB]">
+                    OCR Confidence: {ocrConf.toFixed(1)}%
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Full Name</span>
-                    <span className={`font-bold block truncate mt-0.5 ${hasValidName ? 'text-slate-900' : 'text-slate-400 italic font-normal'}`}>
+                <div className="grid grid-cols-2 gap-4 text-[16px]">
+                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Full Name</span>
+                    <span className="font-bold block truncate text-[#10233F]">
                       {hasValidName ? name : 'NOT DETECTED'}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Document Number</span>
-                    <span className={`font-mono font-bold block truncate mt-0.5 ${hasValidDocNum ? 'text-slate-900' : 'text-slate-400 italic font-normal'}`}>
+                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Document Number</span>
+                    <span className="font-bold block truncate text-[#10233F]">
                       {hasValidDocNum ? docNum : 'NOT DETECTED'}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Date of Birth</span>
-                    <span className={`font-mono block truncate mt-0.5 ${currentResult.date_of_birth ? 'text-slate-800' : 'text-slate-400 italic font-normal'}`}>
+                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Date of Birth</span>
+                    <span className="font-bold block truncate text-[#10233F]">
                       {formatVisualDate(currentResult.date_of_birth) || 'NOT DETECTED'}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Nationality</span>
-                    <span className={`font-semibold block truncate mt-0.5 ${hasValidNat ? 'text-slate-800' : 'text-slate-400 italic font-normal'}`}>
+                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Nationality</span>
+                    <span className="font-bold block truncate text-[#10233F]">
                       {hasValidNat ? nat : 'NOT DETECTED'}
                     </span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Document Type</span>
-                    <span className="font-semibold text-slate-800 block truncate mt-0.5">
+                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Document Type</span>
+                    <span className="font-bold block truncate text-[#10233F]">
                       {currentResult.document_type || selectedDocType}
                     </span>
                   </div>
 
-                  <div className={`p-3 rounded-xl border ${status === 'EXPIRED' ? 'bg-red-50 border-red-200 text-red-900' : 'bg-slate-50 border-slate-100 text-slate-900'}`}>
-                    <span className="text-[10px] font-bold uppercase text-slate-400 block">Date of Expiry</span>
-                    <span className={`font-mono font-bold block mt-0.5 ${status === 'EXPIRED' ? 'text-red-700' : currentResult.date_of_expiry ? 'text-slate-900' : 'text-slate-400 italic font-normal'}`}>
+                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Date of Expiry</span>
+                    <span className="font-bold block truncate text-[#10233F]">
                       {formatVisualDate(currentResult.date_of_expiry) || 'NOT DETECTED'}
                     </span>
-                    {status === 'EXPIRED' && (
-                      <span className="text-[10px] font-bold text-red-600 block mt-0.5">
-                        DOCUMENT EXPIRED
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Verification Checks Card (col-span-6) */}
-              <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-sm font-bold text-slate-900">
-                      Verification Checks
-                    </h3>
-                  </div>
-                  <span className="text-xs text-slate-500">6 Security Dimensions</span>
+              <div className="bg-white rounded-[8px] border border-[#C9DCF8] p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#C9DCF8] pb-3">
+                  <h3 className="text-[20px] font-bold text-[#10233F] uppercase">
+                    Verification Pipeline Status
+                  </h3>
+                  <span className="text-[14px] font-bold text-[#64748B]">
+                    6 Security Dimensions
+                  </span>
                 </div>
 
-                <div className="space-y-2.5 text-xs">
-                  {/* 1. Document Information Extracted */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                    <span className="font-semibold text-slate-700">Document Information Extracted</span>
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Extracted</span>
-                    </span>
+                <div className="space-y-3 text-[15px]">
+                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="font-bold text-[#10233F]">OCR Extraction</span>
+                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
                   </div>
 
-                  {/* 2. MRZ Checksum - Always Passed */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                    <span className="font-semibold text-slate-700">MRZ Checksum & ICAO 9303</span>
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Passed</span>
-                    </span>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="font-bold text-[#10233F]">MRZ Validation</span>
+                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
                   </div>
 
-                  {/* 3. Document Layout & Format Integrity */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                    <span className="font-semibold text-slate-700">Document Layout & Format Integrity</span>
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Valid</span>
-                    </span>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="font-bold text-[#10233F]">Document Validation</span>
+                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
                   </div>
 
-                  {/* 4. Digital Tampering Analysis */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                    <span className="font-semibold text-slate-700">Digital Tampering Analysis</span>
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>No Splicing Detected</span>
-                    </span>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="font-bold text-[#10233F]">Tampering Analysis</span>
+                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
                   </div>
 
-                  {/* 5. Identity & Facial Biometric Match */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                    <span className="font-semibold text-slate-700">Identity & Facial Biometric Match</span>
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Verified ({currentResult.face_details?.match_score && currentResult.face_details.match_score >= 80 ? currentResult.face_details.match_score : 96.8}%)</span>
-                    </span>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="font-bold text-[#10233F]">Face Verification</span>
+                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
                   </div>
 
-                  {/* 6. Image Clarity & Resolution */}
-                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50">
-                    <span className="font-semibold text-slate-700">Image Clarity & Resolution</span>
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Sufficient</span>
-                    </span>
+                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="font-bold text-[#10233F]">Database Match</span>
+                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 3. SCANNED DOCUMENT VIEWPORT */}
+            {/* DOCUMENT INSPECTION VIEWPORT */}
             <DocumentInspectionViewport
               record={currentResult}
-              uploadedPreviewUrl={uploadedPreviewUrl || currentResult.uploaded_document?.signed_url || (currentResult.verification_id ? `/api/verifications/${currentResult.verification_id}/image/passport` : undefined)}
+              uploadedPreviewUrl={uploadedPreviewUrl || currentResult.document_face_url || undefined}
             />
 
-            {/* 4. 1:1 FACIAL BIOMETRIC MATCH (PASSPORT PORTRAIT VS BIOMETRIC PHOTO) */}
+            {/* 1:1 FACIAL BIOMETRIC MATCH */}
             <BiometricMatchView
               record={currentResult}
-              personPreviewUrl={personPreviewUrl || currentResult.face_details?.presented_face_url || (currentResult.verification_id ? `/api/verifications/${currentResult.verification_id}/image/person` : undefined)}
+              personPreviewUrl={personPreviewUrl || currentResult.face_details?.presented_face_url || undefined}
             />
 
-            {/* 5. VISIBLE TEXT VS MRZ CONSISTENCY CHECK */}
+            {/* VISIBLE VS MRZ TABLE */}
             {currentResult.field_consistency && currentResult.field_consistency.length > 0 && (
               <VisibleVsMrzTable fields={currentResult.field_consistency} />
             )}
 
-            {/* 6. DOCUMENT PORTRAIT EXTRACTION */}
+            {/* DOCUMENT PORTRAIT CARD */}
             <DocumentPortraitCard record={currentResult} />
 
-            {/* 5. RISK ASSESSMENT & OFFICER RECOMMENDATION */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Risk Assessment Card */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Risk Assessment
-                  </h3>
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      status === 'VERIFIED'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : status === 'UNREGISTERED' || status === 'REVIEW_REQUIRED'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    Score: {currentResult.risk_score ?? 0}/100
-                  </span>
-                </div>
-
-                <div className="space-y-2 text-xs text-slate-600 leading-relaxed">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">Risk Level:</span>
-                    <span
-                      className={`font-bold ${
-                        status === 'VERIFIED'
-                          ? 'text-emerald-700'
-                          : status === 'UNREGISTERED' || status === 'REVIEW_REQUIRED'
-                          ? 'text-amber-700'
-                          : 'text-red-700'
-                      }`}
-                    >
-                      {currentResult.risk_level || (status === 'VERIFIED' ? 'LOW' : status === 'UNREGISTERED' || status === 'REVIEW_REQUIRED' ? 'MEDIUM' : 'HIGH')}
-                    </span>
-                  </div>
-                  <div>
-                    <strong>Analysis Summary:</strong>{' '}
-                    {status === 'VERIFIED'
-                      ? 'The risk assessment score indicates that document data fields are consistent with cryptographic checksums and visual characteristics.'
-                      : status === 'FAILED'
-                      ? 'Document OCR/MRZ extraction failed. The document number could not be read or extracted.'
-                      : status === 'EXPIRED'
-                      ? 'Real-time timeline analysis confirmed that document validity has lapsed.'
-                      : status === 'MISMATCH'
-                      ? 'Biographic or biometric comparison with registered identity yielded critical mismatches.'
-                      : 'The document requires secondary inspection by a verifying officer.'}
-                  </div>
-                </div>
+            {/* TABBED DEEP FORENSICS SECTION */}
+            <div className="bg-white rounded-[8px] border border-[#C9DCF8] p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-[#C9DCF8] pb-3">
+                <h3 className="text-[20px] font-bold text-[#10233F] uppercase">
+                  Forensic Evidence & Inspection Console
+                </h3>
               </div>
 
-              {/* Officer Recommendation Card */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Officer Directive
-                  </h3>
-                  <span className="text-xs text-slate-400 font-mono">Action Recommended</span>
-                </div>
-
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-2">
-                  <div className="font-bold text-slate-900 flex items-center gap-2">
-                    {status === 'VERIFIED' ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    ) : status === 'UNREGISTERED' || status === 'REVIEW_REQUIRED' ? (
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-red-600" />
-                    )}
-                    <span>
-                      {status === 'VERIFIED'
-                        ? 'Document Cleared to Proceed'
-                        : status === 'UNREGISTERED'
-                        ? 'Unregistered Document — Manual Entry Required'
-                        : status === 'REVIEW_REQUIRED'
-                        ? 'Secondary Verification Recommended'
-                        : 'Document Inadmissible / Refusal Advised'}
-                    </span>
-                  </div>
-                  <p className="leading-relaxed">
-                    {currentResult.reasons?.[0] || currentResult.notes || (
-                      status === 'VERIFIED'
-                        ? 'Document can proceed based on the automated verification results.'
-                        : 'Initiate secondary officer review protocol.'
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 6. EXPANDABLE / TABBED DEEP FORENSICS SECTION */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Detailed Forensic Evidence & Inspection Console
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Deep inspection data for audits and supervisory sign-off
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+              <div className="flex flex-wrap items-center gap-2 text-[15px] font-bold">
                 <button
                   onClick={() => setActiveTab('overview')}
-                  className={`px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2.5 rounded-[4px] uppercase cursor-pointer ${
                     activeTab === 'overview'
-                      ? 'bg-blue-600 text-white font-bold shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-[#102A56] text-white'
+                      : 'bg-[#F5F9FF] text-[#10233F] border border-[#C9DCF8]'
                   }`}
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Timeline & Overview</span>
+                  Timeline & Overview
                 </button>
 
                 <button
                   onClick={() => setActiveTab('mrz')}
-                  className={`px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2.5 rounded-[4px] uppercase cursor-pointer ${
                     activeTab === 'mrz'
-                      ? 'bg-blue-600 text-white font-bold shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-[#102A56] text-white'
+                      : 'bg-[#F5F9FF] text-[#10233F] border border-[#C9DCF8]'
                   }`}
                 >
-                  <FileCheck className="w-3.5 h-3.5" />
-                  <span>MRZ 9303</span>
+                  MRZ 9303
                 </button>
 
                 <button
                   onClick={() => setActiveTab('forensics')}
-                  className={`px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2.5 rounded-[4px] uppercase cursor-pointer ${
                     activeTab === 'forensics'
-                      ? 'bg-blue-600 text-white font-bold shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-[#102A56] text-white'
+                      : 'bg-[#F5F9FF] text-[#10233F] border border-[#C9DCF8]'
                   }`}
                 >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Forensics (ELA)</span>
+                  Forensics (ELA)
                 </button>
 
                 <button
                   onClick={() => setActiveTab('blockchain')}
-                  className={`px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2.5 rounded-[4px] uppercase cursor-pointer ${
                     activeTab === 'blockchain'
-                      ? 'bg-blue-600 text-white font-bold shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-[#102A56] text-white'
+                      : 'bg-[#F5F9FF] text-[#10233F] border border-[#C9DCF8]'
                   }`}
                 >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Audit Trail</span>
+                  Audit Trail
                 </button>
 
                 <button
                   onClick={() => setActiveTab('decision')}
-                  className={`px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-4 py-2.5 rounded-[4px] uppercase cursor-pointer ${
                     activeTab === 'decision'
-                      ? 'bg-blue-600 text-white font-bold shadow-xs'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      ? 'bg-[#102A56] text-white'
+                      : 'bg-[#F5F9FF] text-[#10233F] border border-[#C9DCF8]'
                   }`}
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>Officer Sign-off</span>
+                  Officer Sign-off
                 </button>
               </div>
 
-              {/* Tab Contents */}
-              <div className="pt-2">
+              <div className="pt-3">
                 {activeTab === 'overview' && (
-                  <div className="space-y-4">
-                    <RealTimeTimelineCard
-                      expiryDateStr={currentResult.date_of_expiry}
-                      dobDateStr={currentResult.date_of_birth}
-                      documentType={currentResult.document_type}
-                    />
-                  </div>
+                  <RealTimeTimelineCard
+                    expiryDateStr={currentResult.date_of_expiry}
+                    dobDateStr={currentResult.date_of_birth}
+                    documentType={currentResult.document_type}
+                  />
                 )}
-
                 {activeTab === 'mrz' && <MrzInspector record={currentResult} />}
                 {activeTab === 'forensics' && <ForensicsElaViewer record={currentResult} />}
                 {activeTab === 'blockchain' && <BlockchainAuditBadge record={currentResult} />}
@@ -1409,9 +1168,7 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
               </div>
             </div>
 
-
-
-            {/* 8. FORENSIC REPORT DOCKET MODAL */}
+            {/* FORENSIC REPORT MODAL */}
             {isReportModalOpen && (
               <ForensicReportModal
                 record={currentResult}

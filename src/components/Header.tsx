@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Radio, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { OfficerUser } from '../types/auth';
 
 interface HeaderProps {
@@ -43,61 +43,68 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, user }) => {
         .join('')
         .slice(0, 2)
         .toUpperCase()
-    : 'RK';
+    : 'VX';
 
   return (
-    <header className="h-16 bg-[#090D16] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0 z-20 font-sans text-slate-100 shadow-sm">
-      {/* Page Context */}
-      <div className="flex items-center gap-3 min-w-0">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-base font-bold text-white tracking-tight">
-              {title}
-            </h1>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Terminal Active
-            </span>
+    <header
+      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      className="relative bg-white border-b border-[#C9DCF8] shrink-0 z-20 text-[#10233F]"
+    >
+      <div className="h-[3px] w-full bg-[#2563EB]" />
+
+      <div className="h-16 px-6 flex items-center justify-between">
+        {/* Left: Page Title & Status */}
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <h1 className="text-[20px] font-bold text-[#10233F] tracking-tight truncate">
+                {title}
+              </h1>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[4px] text-[13px] font-bold bg-[#DCFCE7] text-[#15803D] border border-green-300">
+                <span className="w-2 h-2 rounded-full bg-[#15803D]" />
+                SYSTEM ONLINE
+              </span>
+            </div>
+            {subtitle && (
+              <p className="text-[14px] text-[#64748B] font-normal truncate max-w-xl mt-0.5">
+                {subtitle}
+              </p>
+            )}
           </div>
-          {subtitle && (
-            <p className="text-xs text-slate-400 font-normal mt-0.5 truncate max-w-xl">
-              {subtitle}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Right Details: Date, Officer, Initials Avatar */}
-      <div className="flex items-center gap-4">
-        {/* Date & Time */}
-        <div className="hidden md:flex flex-col text-right">
-          <span className="text-xs font-mono font-semibold text-slate-200 flex items-center gap-1.5 justify-end">
-            <Clock className="w-3.5 h-3.5 text-blue-400" />
-            {timeStr || '03:45 PM'}
-          </span>
-          <span className="text-[11px] text-slate-400 font-mono">
-            {dateStr || 'Sat, Sep 5, 2026'}
-          </span>
         </div>
 
-        <div className="h-7 w-px bg-slate-800 hidden md:block" />
-
-        {/* Officer info & Initials */}
-        <div className="flex items-center gap-2.5">
-          <div className="hidden sm:flex flex-col text-right">
-            <span className="text-xs font-bold text-white leading-snug">
-              {user?.full_name || 'Inspector Rajeshwar'}
+        {/* Right Details: Date, Officer Info */}
+        <div className="flex items-center gap-5 shrink-0">
+          {/* Date & Time */}
+          <div className="hidden md:flex flex-col text-right">
+            <span className="text-[14px] font-bold text-[#10233F] flex items-center gap-1.5 justify-end">
+              <Clock className="w-4 h-4 text-[#2563EB]" />
+              {timeStr || '10:00 AM'}
             </span>
-            <span className="text-[10px] text-blue-400 font-mono font-semibold">
-              {user?.user_id || 'officer001'}
+            <span className="text-[12px] text-[#64748B] font-normal">
+              {dateStr || 'Thu, Sep 17, 2026'}
             </span>
           </div>
 
-          <div
-            className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-blue-600/30 border border-blue-500/30"
-            title={user?.full_name || 'Officer'}
-          >
-            {initials}
+          <div className="h-8 w-px bg-[#C9DCF8] hidden md:block" />
+
+          {/* Officer info & Initials */}
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex flex-col text-right">
+              <span className="text-[15px] font-bold text-[#10233F]">
+                {user?.full_name || 'Authorized Officer'}
+              </span>
+              <span className="text-[13px] text-[#2563EB] font-bold">
+                {user?.user_id || 'A001'} • Officer
+              </span>
+            </div>
+
+            <div
+              className="w-10 h-10 rounded-[6px] bg-[#102A56] text-white flex items-center justify-center font-bold text-[15px]"
+              title={user?.full_name || 'Officer'}
+            >
+              {initials}
+            </div>
           </div>
         </div>
       </div>

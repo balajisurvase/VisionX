@@ -26,15 +26,15 @@ export const ForensicsElaViewer: React.FC<ForensicsElaViewerProps> = ({ record }
   const tamperingScore = 0;
 
   return (
-    <div className="bg-white rounded-[12px] border border-gray-100 p-6 shadow-2xs space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-[#D97706]" />
+          <Layers className="w-5 h-5 text-amber-600" />
           <div>
-            <h3 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               Digital Image Forensics & Substrate Tampering Suite
             </h3>
-            <span className="text-[11px] text-gray-500 font-medium">
+            <span className="text-[11px] text-slate-500 font-medium">
               OpenCV Error Level Analysis (ELA) • Photo Splice Scanner • Font Glyph Kerning
             </span>
           </div>
@@ -42,20 +42,20 @@ export const ForensicsElaViewer: React.FC<ForensicsElaViewerProps> = ({ record }
 
         <div className="flex items-center gap-2">
           <span
-            className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+            className={`px-3 py-1 rounded-full text-xs font-bold font-mono flex items-center gap-1.5 ${
               !isTampered
-                ? 'bg-[#DCFCE7] text-[#15803D]'
-                : 'bg-[#FEE2E2] text-[#B91C1C]'
+                ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                : 'bg-red-50 text-red-800 border border-red-300'
             }`}
           >
             {!isTampered ? (
               <>
-                <CheckCircle2 className="w-3.5 h-3.5" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                 Substrate Authentic ({tamperingScore}% Anomaly)
               </>
             ) : (
               <>
-                <ShieldAlert className="w-3.5 h-3.5" />
+                <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
                 Tampering Detected ({tamperingScore}% Anomaly)
               </>
             )}
@@ -64,33 +64,33 @@ export const ForensicsElaViewer: React.FC<ForensicsElaViewerProps> = ({ record }
       </div>
 
       {/* Forensic Diagnostic Tabs */}
-      <div className="flex items-center gap-2 border-b border-gray-200 text-xs font-bold">
+      <div className="flex items-center gap-2 border-b border-slate-200 text-xs font-bold">
         <button
           onClick={() => setActiveForensicTab('ela')}
-          className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
+          className={`pb-2.5 px-3 border-b-2 cursor-pointer ${
             activeForensicTab === 'ela'
-              ? 'border-[#D97706] text-[#D97706]'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
+              ? 'border-[#0B3D91] text-[#0B3D91]'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           Error Level Analysis (ELA)
         </button>
         <button
           onClick={() => setActiveForensicTab('kerning')}
-          className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
+          className={`pb-2.5 px-3 border-b-2 cursor-pointer ${
             activeForensicTab === 'kerning'
-              ? 'border-[#D97706] text-[#D97706]'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
+              ? 'border-[#0B3D91] text-[#0B3D91]'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           Font & Glyph Kerning
         </button>
         <button
           onClick={() => setActiveForensicTab('metadata')}
-          className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
+          className={`pb-2.5 px-3 border-b-2 cursor-pointer ${
             activeForensicTab === 'metadata'
-              ? 'border-[#D97706] text-[#D97706]'
-              : 'border-transparent text-gray-500 hover:text-gray-900'
+              ? 'border-[#0B3D91] text-[#0B3D91]'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           EXIF & Tool Signatures

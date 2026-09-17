@@ -63,7 +63,7 @@ export const ForensicReportModal: React.FC<ForensicReportModalProps> = ({ record
         {/* Top Modal Action Bar (Hidden on print) */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 print:hidden shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-[#0B3D91] flex items-center justify-center">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -79,14 +79,14 @@ export const ForensicReportModal: React.FC<ForensicReportModalProps> = ({ record
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded bg-[#0B3D91] hover:bg-[#082d6c] text-white text-xs font-bold cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print / Save PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -117,7 +117,7 @@ export const ForensicReportModal: React.FC<ForensicReportModalProps> = ({ record
             <div className="text-right font-mono text-xs space-y-1">
               <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 inline-block text-left">
                 <div><span className="text-slate-400">VERIFICATION ID:</span> <span className="font-bold text-slate-900">{record.verification_id}</span></div>
-                <div><span className="text-slate-400">TIMESTAMP:</span> <span className="font-bold text-slate-900">{new Date(record.created_at || Date.now()).toUTCString()}</span></div>
+                <div><span className="text-slate-400">TIMESTAMP:</span> <span className="font-bold text-slate-900">{(() => { const d = new Date(record.created_at || Date.now()); return `${d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}, ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} UTC`; })()}</span></div>
                 <div><span className="text-slate-400">OFFICER:</span> <span className="font-bold text-slate-900">{record.officer_id || 'OFFICER-SSB-409'}</span></div>
               </div>
             </div>

@@ -79,15 +79,15 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
     null;
 
   return (
-    <div className="bg-white rounded-[12px] border border-gray-100 p-5 shadow-2xs space-y-4">
+    <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-5 shadow-xs space-y-4">
       {/* Top Controls Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-            <Camera className="w-4 h-4 text-[#4F46E5]" />
+          <span className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+            <Camera className="w-4 h-4 text-cyan-400" />
             Forensic Document Viewport
           </span>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F5F6F8] text-gray-600 font-mono">
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-950 text-cyan-400 font-mono border border-slate-800">
             {zoomLevel}%
           </span>
         </div>
@@ -96,42 +96,42 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
           {/* Zoom Controls */}
           <button
             onClick={handleZoomOut}
-            className="p-1.5 rounded-lg bg-[#F5F6F8] hover:bg-gray-200 text-gray-700 cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 cursor-pointer border border-slate-800"
             title="Zoom Out"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleZoomIn}
-            className="p-1.5 rounded-lg bg-[#F5F6F8] hover:bg-gray-200 text-gray-700 cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 cursor-pointer border border-slate-800"
             title="Zoom In"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleRotate}
-            className="p-1.5 rounded-lg bg-[#F5F6F8] hover:bg-gray-200 text-gray-700 cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 cursor-pointer border border-slate-800"
             title="Rotate 90°"
           >
             <RotateCw className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleResetZoom}
-            className="px-2 py-1 text-[11px] font-bold rounded-lg bg-[#F5F6F8] hover:bg-gray-200 text-gray-600 cursor-pointer"
+            className="px-2 py-1 text-[11px] font-bold rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 cursor-pointer border border-slate-800"
             title="Reset Transform"
           >
             Reset
           </button>
 
-          <div className="h-4 w-px bg-gray-200 mx-1" />
+          <div className="h-4 w-px bg-slate-800 mx-1" />
 
           {/* Overlays Toggle */}
           <button
             onClick={() => setShowOverlays(!showOverlays)}
-            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg cursor-pointer flex items-center gap-1 ${
               showOverlays
-                ? 'bg-[#EEF2FF] text-[#4F46E5] border border-[#4F46E5]/30'
-                : 'bg-[#F5F6F8] text-gray-600 hover:bg-gray-200'
+                ? 'bg-cyan-950/80 text-cyan-400 border border-cyan-800/50'
+                : 'bg-slate-950 text-slate-400 hover:bg-slate-800 border border-slate-800'
             }`}
           >
             {showOverlays ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
@@ -141,10 +141,10 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
           {/* ELA Heatmap Toggle */}
           <button
             onClick={() => setShowElaHeatmap(!showElaHeatmap)}
-            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+            className={`px-2.5 py-1 text-[11px] font-bold rounded-lg cursor-pointer flex items-center gap-1 ${
               showElaHeatmap
-                ? 'bg-[#FEF3C7] text-[#B45309] border border-[#D97706]/30'
-                : 'bg-[#F5F6F8] text-gray-600 hover:bg-gray-200'
+                ? 'bg-amber-950/80 text-amber-400 border border-amber-800/50'
+                : 'bg-slate-950 text-slate-400 hover:bg-slate-800 border border-slate-800'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -154,10 +154,10 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
           {/* Grid/Ruler Toggle */}
           <button
             onClick={() => setShowGridRuler(!showGridRuler)}
-            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+            className={`p-1.5 rounded-lg cursor-pointer border ${
               showGridRuler
-                ? 'bg-[#DCFCE7] text-[#15803D]'
-                : 'bg-[#F5F6F8] text-gray-600 hover:bg-gray-200'
+                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800/50'
+                : 'bg-slate-950 text-slate-400 hover:bg-slate-800 border-slate-800'
             }`}
             title="Alignment Crosshairs & Micro-Grid"
           >
@@ -168,19 +168,19 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
 
       {/* Real-time Expiry Notification Ribbon */}
       {isExpired && (
-        <div className="bg-[#FEF2F2] border border-[#FCA5A5] p-2.5 rounded-xl flex items-center justify-between gap-2 text-xs font-bold text-[#991B1B] shadow-2xs animate-pulse">
+        <div className="bg-red-950/60 border border-red-800/60 p-2.5 rounded-xl flex items-center justify-between gap-2 text-xs font-bold text-red-300">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 shrink-0 text-red-600" />
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
             <span>REAL-TIME EXPIRY: Validity lapsed {realTimeEval.relativeTimeText} ({realTimeEval.visualDate})</span>
           </div>
-          <span className="bg-red-600 text-white text-[10px] px-2 py-0.5 rounded font-mono uppercase font-bold shrink-0">
+          <span className="bg-red-500 text-slate-950 text-[10px] px-2 py-0.5 rounded font-mono uppercase font-bold shrink-0">
             Lapsed
           </span>
         </div>
       )}
 
       {/* Main Canvas Viewport Container */}
-      <div className="relative bg-[#0B1220] rounded-xl overflow-hidden min-h-[320px] max-h-[440px] flex items-center justify-center p-4 border border-gray-200 select-none">
+      <div className="relative bg-slate-950 rounded-xl overflow-hidden min-h-[320px] max-h-[440px] flex items-center justify-center p-4 border border-slate-800 select-none">
         {/* Alignment Grid Overlay */}
         {showGridRuler && (
           <div
@@ -200,8 +200,8 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
               OpenCV Error Level Analysis Active: Residual Delta Heatmap
             </div>
             {isTampered && (
-              <div className="absolute left-[15%] top-[25%] w-28 h-36 border-2 border-red-500 rounded bg-red-500/20 animate-pulse flex items-center justify-center">
-                <span className="text-[9px] font-bold bg-red-600 text-white px-1 py-0.5 rounded font-mono shadow-xs">
+              <div className="absolute left-[15%] top-[25%] w-28 h-36 border-2 border-red-500 rounded bg-red-500/20 flex items-center justify-center">
+                <span className="text-[9px] font-bold bg-red-600 text-white px-1 py-0.5 rounded font-mono">
                   COMPRESSION SPIKE
                 </span>
               </div>
@@ -211,7 +211,7 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
 
         {/* Document Render Element (Uploaded Image OR Synthesized Vector Specimen) */}
         <div
-          className="transition-transform duration-200 ease-out origin-center w-full max-w-lg"
+          className="origin-center w-full max-w-lg"
           style={{
             transform: `scale(${zoomLevel / 100}) rotate(${rotation}deg)`,
           }}
@@ -401,32 +401,32 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
       </div>
 
       {/* Viewport Meta Details */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono text-gray-600 pt-1">
-        <div className="p-2 rounded-lg bg-[#F5F6F8]">
-          <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono text-slate-400 pt-1">
+        <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+          <span className="text-[9px] text-slate-500 block uppercase font-sans font-bold">
             Standard
           </span>
-          <span className="font-bold text-gray-900">
+          <span className="font-bold text-slate-200">
             {record.mrz_info?.detected || Boolean(record.ocr_data?.mrz_line_1) ? 'ICAO Doc 9303 (TD3)' : 'Visual Inspection Zone'}
           </span>
         </div>
-        <div className="p-2 rounded-lg bg-[#F5F6F8]">
-          <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
+        <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+          <span className="text-[9px] text-slate-500 block uppercase font-sans font-bold">
             Substrate Check
           </span>
-          <span className="font-bold text-amber-700">NOT ANALYZED (Digital Upload)</span>
+          <span className="font-bold text-amber-400">NOT ANALYZED (Digital Upload)</span>
         </div>
-        <div className="p-2 rounded-lg bg-[#F5F6F8]">
-          <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
+        <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+          <span className="text-[9px] text-slate-500 block uppercase font-sans font-bold">
             Image Mode
           </span>
-          <span className="font-bold text-gray-900">Single-Spectrum RGB</span>
+          <span className="font-bold text-slate-200">Single-Spectrum RGB</span>
         </div>
-        <div className="p-2 rounded-lg bg-[#F5F6F8]">
-          <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
+        <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+          <span className="text-[9px] text-slate-500 block uppercase font-sans font-bold">
             Physical Security
           </span>
-          <span className="font-bold text-slate-500">UNAVAILABLE (Digital File)</span>
+          <span className="font-bold text-slate-400">UNAVAILABLE (Digital File)</span>
         </div>
       </div>
     </div>

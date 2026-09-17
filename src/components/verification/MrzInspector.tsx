@@ -59,15 +59,15 @@ export const MrzInspector: React.FC<MrzInspectorProps> = ({ record }) => {
 
   if (!isMrzDetected || !mrz1 || !mrz2) {
     return (
-      <div className="bg-white rounded-[12px] border border-gray-100 p-6 shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
             <div>
-              <h3 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
                 Machine Readable Zone (MRZ) Inspector
               </h3>
-              <span className="text-[11px] text-gray-500 font-medium">
+              <span className="text-[11px] text-slate-500 font-medium">
                 TD-3 Standard 2-Line Optical Structure Inspection
               </span>
             </div>
@@ -123,35 +123,35 @@ export const MrzInspector: React.FC<MrzInspectorProps> = ({ record }) => {
   }
 
   return (
-    <div className="bg-white rounded-[12px] border border-gray-100 p-6 shadow-2xs space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+    <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
-          <FileCheck className="w-5 h-5 text-[#4F46E5]" />
+          <FileCheck className="w-5 h-5 text-[#0B3D91]" />
           <div>
-            <h3 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
               ICAO Doc 9303 Machine Readable Zone (MRZ) Inspector
             </h3>
-            <span className="text-[11px] text-gray-500 font-medium">
+            <span className="text-[11px] text-slate-500 font-medium">
               TD-3 Standard 2-Line Optical Structure (44 Characters per line)
             </span>
           </div>
         </div>
 
         <span
-          className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
+          className={`px-3 py-1 rounded-full text-xs font-bold font-mono flex items-center gap-1.5 ${
             isChecksumValid
-              ? 'bg-[#DCFCE7] text-[#15803D]'
-              : 'bg-[#FEE2E2] text-[#B91C1C]'
+              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+              : 'bg-red-50 text-red-800 border border-red-300'
           }`}
         >
           {isChecksumValid ? (
             <>
-              <CheckCircle2 className="w-3.5 h-3.5" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
               Modulo-10 (7-3-1) Checksum Verified
             </>
           ) : (
             <>
-              <XCircle className="w-3.5 h-3.5" />
+              <XCircle className="w-3.5 h-3.5 text-red-600" />
               MRZ Checksum Mismatch
             </>
           )}
@@ -276,7 +276,7 @@ export const MrzInspector: React.FC<MrzInspectorProps> = ({ record }) => {
 
         {/* Expiration Date Checksum */}
         <div
-          className={`p-4 rounded-xl border space-y-2 text-xs transition-all ${
+          className={`p-4 rounded-xl border space-y-2 text-xs ${
             isExpired
               ? 'bg-red-50/80 border-red-200 text-red-950'
               : 'bg-[#F5F6F8] border-gray-200 text-gray-700'

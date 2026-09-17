@@ -1,5 +1,5 @@
 {
-  "name": "IdentityGuard - Identity & Document Verification",
+  "name": "VisionX - Identity & Document Verification System",
   "description": "Secure enterprise identity and document verification system for passports, national IDs, and driving licenses with automated authenticity checks, tampering detection, and risk scoring.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -91,7 +91,7 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
   ];
 
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-800 text-slate-100 shadow-md overflow-hidden font-mono">
+    <div className="bg-slate-900 rounded-xl border border-slate-800 text-slate-100 overflow-hidden font-mono">
       {/* Header Bar */}
       <div className="w-full px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center gap-3">
@@ -99,7 +99,7 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
               Document Verification Telemetry Console
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
             </h3>
             <span className="text-[11px] text-slate-400 font-sans block">
               15-Stage Document-Only Forensic Analysis Pipeline
@@ -109,12 +109,12 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
 
         <div className="flex items-center gap-3 self-end sm:self-auto">
           {positionToggle && (
-            <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl text-[10px] font-sans">
+            <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg text-[10px] font-sans">
               <button
                 onClick={() => positionToggle.onChange('top')}
-                className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                className={`px-2 py-0.5 rounded ${
                   positionToggle.current === 'top'
-                    ? 'bg-blue-600 text-white font-bold'
+                    ? 'bg-[#0B3D91] text-white font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -122,9 +122,9 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
               </button>
               <button
                 onClick={() => positionToggle.onChange('bottom')}
-                className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                className={`px-2 py-0.5 rounded ${
                   positionToggle.current === 'bottom'
-                    ? 'bg-blue-600 text-white font-bold'
+                    ? 'bg-[#0B3D91] text-white font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -139,7 +139,7 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
 
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
           >
             {isOpen ? (
               <ChevronUp className="w-4 h-4 text-slate-400" />
@@ -156,7 +156,7 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('stages')}
-              className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer font-bold ${
+              className={`px-2.5 py-1 rounded-lg cursor-pointer font-bold ${
                 activeTab === 'stages'
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                   : 'text-slate-400 hover:text-slate-200'
@@ -166,7 +166,7 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
             </button>
             <button
               onClick={() => setActiveTab('logs')}
-              className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer font-bold ${
+              className={`px-2.5 py-1 rounded-lg cursor-pointer font-bold ${
                 activeTab === 'logs'
                   ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                   : 'text-slate-400 hover:text-slate-200'
@@ -176,7 +176,7 @@ export const VerificationPipelineDebugCard: React.FC<VerificationPipelineDebugCa
             </button>
             <button
               onClick={() => setActiveTab('crypto')}
-              className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer font-bold ${
+              className={`px-2.5 py-1 rounded-lg cursor-pointer font-bold ${
                 activeTab === 'crypto'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
                   : 'text-slate-400 hover:text-slate-200'

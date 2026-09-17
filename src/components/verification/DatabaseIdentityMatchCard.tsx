@@ -194,7 +194,7 @@ export const DatabaseIdentityMatchCard: React.FC<DatabaseIdentityMatchCardProps>
             {onViewPerson && (
               <button
                 onClick={() => onViewPerson(matched_person.id)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-blue-600 border border-slate-200 text-xs font-semibold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#0B3D91] border border-slate-200 text-xs font-semibold cursor-pointer"
               >
                 <span>View Profile</span>
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -347,10 +347,10 @@ export const DatabaseIdentityMatchCard: React.FC<DatabaseIdentityMatchCardProps>
         <button
           type="button"
           onClick={() => setShowTechnicalDetails(!showTechnicalDetails)}
-          className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer transition-colors"
+          className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
         >
           <span>Technical Match Audit & Lookup Parameters</span>
-          <ChevronDown className={`w-3.5 h-3.5 transform transition-transform ${showTechnicalDetails ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transform ${showTechnicalDetails ? 'rotate-180' : ''}`} />
         </button>
 
         {showTechnicalDetails && (

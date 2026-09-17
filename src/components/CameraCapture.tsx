@@ -154,16 +154,16 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-[12px] p-4 text-[#111827] shadow-sm border border-gray-100 ${className}`}>
+    <div className={`bg-white rounded-xl p-4 text-slate-800 border border-slate-200 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-3">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded-md bg-blue-50 text-[#0B3D91] flex items-center justify-center font-bold">
             <Camera className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#111827] leading-tight">{title}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>
+            <h3 className="text-sm font-bold text-slate-900 leading-tight">{title}</h3>
+            <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
           </div>
         </div>
 
@@ -171,7 +171,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -182,7 +182,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       <canvas ref={canvasRef} className="hidden" />
 
       {/* Camera Viewport or Snapshot Preview */}
-      <div className="relative w-full aspect-4/3 bg-[#0B1220] rounded-[10px] overflow-hidden flex items-center justify-center border border-gray-200">
+      <div className="relative w-full aspect-4/3 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center border border-slate-200">
         {previewDataUrl ? (
           // Captured Snapshot
           <div className="relative w-full h-full">
@@ -191,24 +191,24 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               alt="Live Face Snapshot"
               className="w-full h-full object-cover"
             />
-            <div className="absolute top-2.5 right-2.5 px-2 py-1 rounded-md bg-[#DCFCE7] text-[#15803D] text-[11px] font-bold flex items-center gap-1 shadow-sm">
-              <Check className="w-3.5 h-3.5" />
+            <div className="absolute top-2.5 right-2.5 px-2 py-1 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 text-[11px] font-bold font-mono flex items-center gap-1">
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
               <span>FRAME CAPTURED</span>
             </div>
           </div>
         ) : cameraError ? (
           // Error State
           <div className="p-6 text-center text-white space-y-3 max-w-xs">
-            <div className="w-10 h-10 rounded-full bg-[#FEE2E2] text-[#B91C1C] flex items-center justify-center mx-auto">
+            <div className="w-10 h-10 rounded-full bg-red-100 text-red-700 flex items-center justify-center mx-auto">
               <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-gray-200">{cameraError}</p>
+              <p className="text-xs font-semibold text-slate-200">{cameraError}</p>
             </div>
             <button
               type="button"
               onClick={() => startStream()}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#4F46E5] hover:bg-[#4338CA] text-white transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded text-xs font-bold bg-[#0B3D91] hover:bg-[#082d6c] text-white cursor-pointer inline-flex items-center gap-1.5"
             >
               <RefreshCw className="w-3 h-3" />
               <span>Try Again</span>
@@ -226,9 +226,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             />
 
             {isInitializing && (
-              <div className="absolute inset-0 bg-[#0B1220]/80 flex flex-col items-center justify-center text-white space-y-2">
-                <RefreshCw className="w-6 h-6 animate-spin text-[#4F46E5]" />
-                <span className="text-xs font-medium text-gray-300">Initializing camera feed...</span>
+              <div className="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center text-white space-y-2 font-mono text-xs">
+                <RefreshCw className="w-5 h-5 text-blue-400" />
+                <span className="text-xs font-medium text-slate-300">Initializing camera feed...</span>
               </div>
             )}
 
@@ -236,10 +236,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             {isStreaming && (
               <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
                 <div className="w-44 h-56 rounded-full border-2 border-dashed border-white/60 flex items-center justify-center">
-                  <div className="w-2 h-2 rounded-full bg-[#4F46E5]/80 animate-ping" />
+                  <div className="w-2 h-2 rounded-full bg-blue-400" />
                 </div>
                 <div className="absolute bottom-3 inset-x-0 text-center">
-                  <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xs text-white text-[11px] font-medium tracking-wide">
+                  <span className="px-2.5 py-1 rounded bg-black/70 text-white text-[11px] font-mono font-medium">
                     Align face inside the oval
                   </span>
                 </div>
@@ -255,7 +255,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
           <button
             type="button"
             onClick={handleRetake}
-            className="w-full py-2 px-4 rounded-lg bg-[#F5F6F8] hover:bg-gray-200 text-[#111827] text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-2 px-4 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Retake Photo</span>
@@ -266,7 +266,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               type="button"
               onClick={toggleFacingMode}
               disabled={!isStreaming}
-              className="py-2 px-3 rounded-lg bg-[#F5F6F8] hover:bg-gray-200 text-gray-700 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="py-2 px-3 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               title="Switch camera"
             >
               <FlipHorizontal className="w-3.5 h-3.5" />
@@ -277,7 +277,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
               type="button"
               onClick={handleCapture}
               disabled={!isStreaming || isInitializing}
-              className="flex-1 py-2 px-4 rounded-lg bg-[#4F46E5] hover:bg-[#4338CA] active:bg-[#3730A3] disabled:opacity-50 text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="flex-1 py-2 px-4 rounded bg-[#0B3D91] hover:bg-[#082d6c] active:bg-[#062150] disabled:opacity-50 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
             >
               <Camera className="w-4 h-4" />
               <span>Capture Face</span>

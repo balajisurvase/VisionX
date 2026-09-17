@@ -61,7 +61,7 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
 
   return (
     <div
-      className={`rounded-xl border p-4 transition-all ${
+      className={`rounded-xl border p-4 ${
         evalResult.isExpired
           ? 'bg-[#FEF2F2] border-[#FCA5A5] text-[#991B1B]'
           : evalResult.isExpiringSoon
@@ -102,8 +102,8 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
         </div>
 
         {/* Live Clock Badge */}
-        <div className="flex items-center gap-2 text-xs font-mono bg-white/80 px-3 py-1.5 rounded-lg border border-current/20 self-start sm:self-auto shadow-2xs">
-          <Clock className="w-3.5 h-3.5 opacity-70 animate-pulse" />
+        <div className="flex items-center gap-2 text-xs font-mono bg-white/80 px-3 py-1.5 rounded-lg border border-current/20 self-start sm:self-auto">
+          <Clock className="w-3.5 h-3.5 opacity-70 text-[#0B3D91]" />
           <div className="leading-tight">
             <span className="text-[10px] opacity-60 uppercase font-bold block">
               Reference Time (Local)
@@ -118,7 +118,7 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
       {/* Main Status Callout Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 my-3">
         {/* Card 1: Document Expiry Date */}
-        <div className="p-3 rounded-lg bg-white/90 border border-current/20 shadow-2xs">
+        <div className="p-3 rounded-lg bg-white/90 border border-current/20">
           <div className="flex items-center gap-1 text-[10px] font-bold uppercase opacity-75">
             <Calendar className="w-3 h-3" />
             <span>Document Expiry Date</span>
@@ -132,7 +132,7 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
         </div>
 
         {/* Card 2: Timeline Variance */}
-        <div className="p-3 rounded-lg bg-white/90 border border-current/20 shadow-2xs">
+        <div className="p-3 rounded-lg bg-white/90 border border-current/20">
           <div className="flex items-center gap-1 text-[10px] font-bold uppercase opacity-75">
             <Hourglass className="w-3 h-3" />
             <span>Timeline Variance</span>
@@ -152,7 +152,7 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
         </div>
 
         {/* Card 3: Clearance Verdict */}
-        <div className="p-3 rounded-lg bg-white/90 border border-current/20 shadow-2xs">
+        <div className="p-3 rounded-lg bg-white/90 border border-current/20">
           <div className="flex items-center gap-1 text-[10px] font-bold uppercase opacity-75">
             <Sparkles className="w-3 h-3" />
             <span>Border Clearance Verdict</span>
@@ -207,12 +207,12 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
         <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
           {evalResult.isExpired ? (
             <div
-              className="h-full bg-red-600 rounded-full transition-all w-full animate-pulse"
+              className="h-full bg-red-600 rounded-full w-full"
               title="Document validity timeline expired"
             />
           ) : (
             <div
-              className={`h-full rounded-full transition-all ${
+              className={`h-full rounded-full ${
                 evalResult.isExpiringSoon ? 'bg-amber-500' : 'bg-emerald-500'
               }`}
               style={{ width: `${progressPercent}%` }}
