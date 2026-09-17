@@ -168,19 +168,20 @@ export async function loginWithUserId(
       if (token) {
         localStorage.setItem(AUTH_TOKEN_KEY, token);
       }
+      const rawUser = data.user || data.officer || {};
       const user: OfficerUser = {
         id: 1,
-        uuid: data.user.id || data.user.uuid,
-        user_id: data.user.user_id,
-        username: data.user.username || data.user.user_id,
-        email: data.user.email,
-        full_name: data.user.full_name,
-        role: data.user.role || 'Officer',
-        department: data.user.department || 'Sashastra Seema Bal (SSB), Police II Division',
-        designation: data.user.designation || 'Screening Officer',
-        badge_number: data.user.badge_number || 'SSB-MHA-8842',
-        terminal: data.user.terminal || 'ICP Raxaul • Indo-Nepal Border Terminal',
-        status: data.user.status || 'Active',
+        uuid: rawUser.uuid || rawUser.id || 'usr-default',
+        user_id: rawUser.user_id || cleanUserId,
+        username: rawUser.username || rawUser.user_id || cleanUserId,
+        email: rawUser.email || `${cleanUserId.toLowerCase()}@ssb.gov.in`,
+        full_name: rawUser.full_name || 'Screening Officer',
+        role: rawUser.role || 'Officer',
+        department: rawUser.department || 'Sashastra Seema Bal (SSB), Police II Division',
+        designation: rawUser.designation || 'Screening Officer',
+        badge_number: rawUser.badge_number || `SSB-MHA-${cleanUserId}`,
+        terminal: rawUser.terminal || 'ICP Raxaul • Indo-Nepal Border Terminal',
+        status: rawUser.status || 'Active',
         created_at: new Date().toISOString(),
       };
       saveSession(user, rememberMe);

@@ -36,6 +36,14 @@ export const API_ENDPOINTS = {
   dashboard: `${API_BASE_URL}/api/dashboard`,
   documents: `${API_BASE_URL}/api/documents`,
   demoScenarios: `${API_BASE_URL}/api/demo/scenarios`,
+  // Registered Persons & Identity Database
+  persons: {
+    list: `${API_BASE_URL}/api/persons`,
+    detail: (id: string | number) => `${API_BASE_URL}/api/persons/${encodeURIComponent(id)}`,
+    create: `${API_BASE_URL}/api/persons`,
+    delete: (id: string | number) => `${API_BASE_URL}/api/persons/${encodeURIComponent(id)}`,
+    match: `${API_BASE_URL}/api/persons/match`,
+  },
   // Audit Chain
   audit: {
     logs: `${API_BASE_URL}/api/audit/logs`,

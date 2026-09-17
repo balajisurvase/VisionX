@@ -1,12 +1,144 @@
+import { DatabaseMatchResult } from './person';
+
 export type DocumentType = 'Passport' | 'Visa' | 'National ID' | 'Driving License' | 'Permit';
 
-export type VerificationStatus = 'VERIFIED' | 'SUSPICIOUS' | 'FAILED' | 'EXPIRED' | 'NOT VERIFIED' | 'PENDING';
+export type DocumentAuthenticityStatus =
+  | 'AUTHENTIC'
+  | 'SUSPICIOUS'
+  | 'LIKELY_MANIPULATED'
+  | 'FAILED'
+  | 'INCONCLUSIVE';
 
-export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+export type VerificationStatus =
+  | 'AUTHENTIC'
+  | 'SUSPICIOUS'
+  | 'LIKELY_MANIPULATED'
+  | 'FAILED'
+  | 'INCONCLUSIVE'
+  | 'VERIFIED'
+  | 'REVIEW_REQUIRED'
+  | 'MISMATCH'
+  | 'UNREGISTERED'
+  | 'EXPIRED'
+  | 'NOT VERIFIED'
+  | 'PENDING';
+
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
+
+export interface VisibleVsMrzField {
+  field_name: string;
+  visible_value: string;
+  mrz_value: string;
+  status: 'MATCH' | 'MISMATCH' | 'NOT AVAILABLE';
+}
 
 export type CheckStatus = 'PASSED' | 'FAILED' | 'WARNING' | 'SUSPICIOUS';
 
 export type DocStatus = 'VALID' | 'EXPIRED' | 'NOT FOUND' | 'REVOKED' | 'TAMPERED';
+
+export interface BoundingBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface OcrRegion {
+  label: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface ScanRegions {
+  document_bbox: BoundingBox;
+  portrait_bbox: BoundingBox;
+  mrz_bbox: BoundingBox;
+  ocr_regions: OcrRegion[];
+}
+
+export interface UploadedDocumentInfo {
+  bucket?: string;
+  path?: string;
+  signed_url: string;
+}
+
+export interface DocumentDetectionInfo {
+  detected: boolean;
+  type: string;
+  confidence: number;
+  bounding_box: BoundingBox;
+  image_quality?: number;
+}
+
+export interface UploadedPortraitInfo {
+  detected: boolean;
+  bucket?: string;
+  path?: string;
+  signed_url?: string;
+  url?: string;
+  bounding_box?: BoundingBox;
+}
+
+export interface RegisteredBiometricInfo {
+  available: boolean;
+  bucket?: string;
+  path?: string;
+  signed_url?: string | null;
+  photo_url?: string | null;
+  person_code?: string | null;
+}
+
+export interface BiometricComparisonInfo {
+  uploaded_face_detected: boolean;
+  reference_face_detected: boolean;
+  similarity: number | null;
+  threshold: number;
+  match: boolean;
+}
+
+export interface MrzDetectionInfo {
+  detected: boolean;
+  crop_url?: string;
+  line_1?: string;
+  line_2?: string;
+  checksum_valid: boolean;
+  valid?: boolean;
+}
+
+export interface RegisteredIdentityInfo {
+  found: boolean;
+  matched?: boolean;
+  person_id?: string | null;
+  person_code?: string | null;
+  full_name?: string | null;
+  nationality?: string | null;
+  document_id?: string | null;
+  status?: string;
+  conflicting_fields?: string[];
+}
+
+export interface DebugInfo {
+  file_received: boolean;
+  image_read: boolean;
+  document_detected?: boolean;
+  image_preprocessed?: boolean;
+  ocr_completed?: boolean;
+  mrz_detected?: boolean;
+  mrz_checksum_valid?: boolean;
+  field_extraction_completed?: boolean;
+  portrait_detected?: boolean;
+  document_structure_analyzed?: boolean;
+  tampering_analyzed?: boolean;
+  visible_mrz_consistency_checked?: boolean;
+  date_validation_completed?: boolean;
+  risk_calculated?: boolean;
+  final_assessment_completed?: boolean;
+  document_number_extracted?: string;
+  final_status: string;
+  [key: string]: any;
+}
 
 export interface OcrExtractedData {
   full_name: string;
@@ -22,6 +154,7 @@ export interface OcrExtractedData {
   permit_zone?: string;
   mrz_line_1?: string;
   mrz_line_2?: string;
+  mrz_valid?: boolean;
   confidence_score: number;
 }
 
@@ -82,6 +215,21 @@ export interface VerificationRecord {
   validation_details?: ValidationDetails;
   tampering_details?: TamperingDetails;
   face_details?: FaceVerificationDetails;
+  database_match?: DatabaseMatchResult;
+  scan_regions?: ScanRegions;
+  debug?: DebugInfo;
+  uploaded_document?: UploadedDocumentInfo;
+  document_detection?: DocumentDetectionInfo;
+  uploaded_portrait?: UploadedPortraitInfo;
+  registered_biometric?: RegisteredBiometricInfo;
+  biometric?: BiometricComparisonInfo;
+  mrz_info?: MrzDetectionInfo;
+  registered_identity_info?: RegisteredIdentityInfo;
+  explanation?: string;
+  field_consistency?: VisibleVsMrzField[];
+  extracted_fields?: Record<string, string>;
+  authenticity_status?: string;
+  forensic_evidence?: any;
 }
 
 export interface AuditLogRecord {

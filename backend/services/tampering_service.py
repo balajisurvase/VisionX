@@ -250,7 +250,7 @@ def _run_gemini_forensic_examination(image_bytes: bytes, mime_type: str = "image
         )
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             contents=[
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
                 prompt

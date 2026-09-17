@@ -29,44 +29,98 @@ export const MrzInspector: React.FC<MrzInspectorProps> = ({ record }) => {
   const ocr = record.ocr_data;
 
   // Normalize dates dynamically from document / scenario
-  const dobIso = normalizeIsoDate(record.date_of_birth || ocr?.date_of_birth, '1998-03-14');
-  const dobVisual = formatVisualDate(dobIso);
-  const dobYymmdd = isoToMrzDate(dobIso, '980314');
-  const dobCheckDigit = calculateIcaoCheckDigit(dobYymmdd);
+  const dobIso = normalizeIsoDate(record.date_of_birth || ocr?.date_of_birth, '');
+  const dobVisual = dobIso ? formatVisualDate(dobIso) : 'Not Detected';
+  const dobYymmdd = isoToMrzDate(dobIso, '');
+  const dobCheckDigit = dobYymmdd ? calculateIcaoCheckDigit(dobYymmdd) : '0';
 
   const rawExp = record.date_of_expiry || ocr?.date_of_expiry;
-  const expIso = normalizeIsoDate(rawExp, '2031-08-20');
-  const expVisual = formatVisualDate(expIso);
-  const expYymmdd = isoToMrzDate(expIso, '310820');
-  const expCheckDigit = calculateIcaoCheckDigit(expYymmdd);
+  const expIso = normalizeIsoDate(rawExp, '');
+  const expVisual = expIso ? formatVisualDate(expIso) : 'Not Detected';
+  const expYymmdd = isoToMrzDate(expIso, '');
+  const expCheckDigit = expYymmdd ? calculateIcaoCheckDigit(expYymmdd) : '0';
 
   // Evaluate real-time timeline expiry
   const realTimeExpiry = evaluateRealTimeExpiry(expIso);
   const isExpired = record.verification_status === 'EXPIRED' || realTimeExpiry.isExpired;
   const isFailed = record.verification_status === 'FAILED';
 
-  const rawDocNo = (record.document_number || ocr?.document_number || 'DEMOPPT001')
+  const rawDocNo = (record.document_number || ocr?.document_number || '')
     .replace(/[^A-Z0-9]/gi, '')
     .toUpperCase();
   const docNoField = rawDocNo.padEnd(9, '<').slice(0, 9);
-  const docNoCheckDigit = calculateIcaoCheckDigit(docNoField);
+  const docNoCheckDigit = docNoField ? calculateIcaoCheckDigit(docNoField) : '0';
 
-  // Computed standard compliant MRZ
-  const computedMrz = generateTd3Mrz({
-    documentType: record.document_type,
-    countryCode: record.nationality?.slice(0, 3) || 'IND',
-    fullName: record.applicant_name || 'AARAV SHARMA',
-    documentNumber: rawDocNo,
-    nationality: record.nationality || 'IND',
-    dateOfBirth: dobIso,
-    dateOfExpiry: expIso,
-    gender: ocr?.gender || 'M',
-  });
+  const isMrzDetected = record.mrz_info?.detected === true || Boolean(ocr?.mrz_line_1 && ocr.mrz_line_1.length >= 20);
+  const mrz1 = ocr?.mrz_line_1 || record.mrz_info?.line1 || '';
+  const mrz2 = ocr?.mrz_line_2 || record.mrz_info?.line2 || '';
 
-  const mrz1 = ocr?.mrz_line_1 && ocr.mrz_line_1.length >= 40 ? ocr.mrz_line_1 : computedMrz.line1;
-  const mrz2 = ocr?.mrz_line_2 && ocr.mrz_line_2.length >= 40 ? ocr.mrz_line_2 : computedMrz.line2;
+  const isChecksumValid = isMrzDetected && (record.mrz_info?.valid === true || record.mrz_info?.checksum_valid === true || record.validation_details?.mrz_checksum_valid === true);
 
-  const isChecksumValid = true;
+  if (!isMrzDetected || !mrz1 || !mrz2) {
+    return (
+      <div className="bg-white rounded-[12px] border border-gray-100 p-6 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-500" />
+            <div>
+              <h3 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+                Machine Readable Zone (MRZ) Inspector
+              </h3>
+              <span className="text-[11px] text-gray-500 font-medium">
+                TD-3 Standard 2-Line Optical Structure Inspection
+              </span>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            MRZ NOT DETECTED
+          </span>
+        </div>
+
+        <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-200/60 flex items-start gap-3">
+          <HelpCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs text-amber-900">
+            <p className="font-semibold">
+              MRZ could not be reliably detected from the uploaded image. This does not by itself indicate document fraud.
+            </p>
+            <p className="text-amber-800 text-[11px] leading-relaxed">
+              Real identity credentials may fail automated MRZ detection due to perspective cropping, lighting glare, surface curvature, or contrast limits. Identity verification continues using the Visual Inspection Zone (VIZ).
+            </p>
+          </div>
+        </div>
+
+        {/* Technical Diagnostics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-mono">
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-[9px] text-slate-400 block uppercase font-sans font-bold">
+              MRZ Region Search
+            </span>
+            <span className="font-bold text-slate-800">Bottom 35% Strip</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-[9px] text-slate-400 block uppercase font-sans font-bold">
+              Preprocessing Passes
+            </span>
+            <span className="font-bold text-slate-800">Rotated + CLAHE + Grayscale</span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-[9px] text-slate-400 block uppercase font-sans font-bold">
+              VIZ Extraction
+            </span>
+            <span className="font-bold text-emerald-700">
+              {record.document_number && record.document_number !== 'NOT DETECTED' ? 'ACTIVE (VIZ)' : 'PARTIAL'}
+            </span>
+          </div>
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100">
+            <span className="text-[9px] text-slate-400 block uppercase font-sans font-bold">
+              Parser Status
+            </span>
+            <span className="font-bold text-slate-600">Awaiting Physical Re-Scan</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-[12px] border border-gray-100 p-6 shadow-2xs space-y-6">

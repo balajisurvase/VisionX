@@ -167,7 +167,7 @@ export const Profile: React.FC<ProfileProps> = ({ user, onLogout }) => {
             </div>
             <div className="flex justify-between py-1.5">
               <span className="text-slate-400">System Version:</span>
-              <span className="font-bold text-slate-800">IdentityGuard AI v2.4 (SIH 2026)</span>
+              <span className="font-bold text-slate-800">IdentityGuard Enterprise v2.4</span>
             </div>
           </div>
         </div>

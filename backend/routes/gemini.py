@@ -39,7 +39,7 @@ def gemini_status():
         return {
             "configured": False,
             "status": "missing_key",
-            "model": "gemini-2.5-flash",
+            "model": "gemini-3.8-flash",
             "message": "GEMINI_API_KEY is not set in backend environment."
         }
     
@@ -47,13 +47,13 @@ def gemini_status():
         client = get_gemini_client()
         # Ping with short test prompt
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             contents="State 'CONNECTED' if you can read this border screening ping."
         )
         return {
             "configured": True,
             "status": "connected",
-            "model": "gemini-2.5-flash",
+            "model": "gemini-3.8-flash",
             "message": "Server-side Gemini Vision & Reasoning model active and verified.",
             "response_sample": response.text.strip()[:50] if response and response.text else "OK"
         }
@@ -62,7 +62,7 @@ def gemini_status():
         return {
             "configured": True,
             "status": "configured_offline",
-            "model": "gemini-2.5-flash",
+            "model": "gemini-3.8-flash",
             "message": f"Gemini client initialized; live call returned: {str(e)[:100]}"
         }
 
@@ -120,7 +120,7 @@ RECOMMENDATION: <clear operational action>
 OFFICER_NOTES: <key physical inspection pointers for the officer>
 """
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             contents=prompt
         )
         text = response.text or ""
@@ -148,7 +148,7 @@ OFFICER_NOTES: <key physical inspection pointers for the officer>
 
         return GeminiExplainResponse(
             status="success",
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             explanation=explanation,
             recommendation=recommendation,
             inconsistencies=inconsistencies,

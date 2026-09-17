@@ -83,19 +83,49 @@ export function calculateThreatRiskScore(input: ThreatRiskPillars): ThreatRiskEv
 
   // =========================================================================
   // 2. ICAO 9303 Checksum & VIZ Cross-Match Component (Max: 25 points)
-  // Always passes
   // =========================================================================
-  const mrzRisk = 0;
-  const mrzStatus: RiskPillarBreakdown['status'] = 'CLEAR';
-  const mrzExplanation = 'All ICAO 9303 modulo-10 check digits pass (Doc No, DOB, Expiry, Composite). VIZ data matches MRZ exactly.';
+  let mrzRisk = 0;
+  let mrzStatus: RiskPillarBreakdown['status'] = 'CLEAR';
+  let mrzExplanation = '';
+
+  if (!input.mrzChecksumValid) {
+    mrzRisk = 25;
+    mrzStatus = 'CRITICAL';
+    mrzExplanation = 'Modulo-10 check digit validation failed (Line 2 check digits mismatch). High suspicion of document alteration or forgery.';
+    recommendations.unshift('CRITICAL MRZ CHECKSUM FAILURE: Modulo-10 check digits failed validation.');
+  } else if (!input.mrzVizMatched) {
+    mrzRisk = 18;
+    mrzStatus = 'WARNING';
+    mrzExplanation = 'Discrepancy detected between visible text area (VIZ) and decoded Machine Readable Zone (MRZ).';
+    recommendations.push('MRZ/VIZ Data Discrepancy: Extracted text fields do not match MRZ data.');
+  } else {
+    mrzRisk = 0;
+    mrzStatus = 'CLEAR';
+    mrzExplanation = 'All ICAO 9303 modulo-10 check digits pass (Doc No, DOB, Expiry, Composite). VIZ data matches MRZ.';
+  }
 
   // =========================================================================
   // 3. Digital Forensics & Substrate ELA Component (Max: 35 points)
-  // Always passes
   // =========================================================================
-  const forensicRisk = 0;
-  const forensicStatus: RiskPillarBreakdown['status'] = 'CLEAR';
-  const forensicExplanation = 'Substrate is uniform and authentic (0.0% baseline compression delta). No edge splicing detected.';
+  let forensicRisk = 0;
+  let forensicStatus: RiskPillarBreakdown['status'] = 'CLEAR';
+  let forensicExplanation = '';
+
+  const tScore = input.tamperingScore || 0;
+  if (tScore >= 50) {
+    forensicRisk = Math.min(35, Math.round(tScore * 0.35));
+    forensicStatus = 'CRITICAL';
+    forensicExplanation = `Substrate anomaly detected (${tScore}% tampering probability). High ELA variance / edge discontinuity.`;
+    recommendations.unshift(`SUBSTRATE FORENSICS ALERT: High risk of digital document tampering (${tScore}% anomaly score).`);
+  } else if (tScore > 15) {
+    forensicRisk = Math.round(tScore * 0.2);
+    forensicStatus = 'ADVISORY';
+    forensicExplanation = `Minor compression variance detected (${tScore}% anomaly score). Non-critical artifacting.`;
+  } else {
+    forensicRisk = 0;
+    forensicStatus = 'CLEAR';
+    forensicExplanation = 'Substrate is uniform and authentic (0.0% baseline compression delta). No edge splicing detected.';
+  }
 
   // =========================================================================
   // 4. Biometric 1:1 Facial Match Component (Max: 25 points)

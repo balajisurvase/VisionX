@@ -1,19 +1,5 @@
 import React, { useState } from 'react';
-import {
-  ShieldAlert,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  Lock,
-  User,
-  ShieldCheck,
-  Camera,
-  ArrowRight,
-  Sparkles,
-  Zap,
-  CheckCircle2,
-  ExternalLink,
-} from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { loginWithUserId } from '../services/authService';
 import { OfficerUser } from '../types/auth';
 
@@ -22,249 +8,239 @@ interface LoginProps {
   onViewLanding?: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onViewLanding }) => {
-  const [userId, setUserId] = useState<string>('A001');
-  const [password, setPassword] = useState<string>('admin123');
+export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+  const [userId, setUserId] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
-    setIsLoading(true);
 
-    try {
-      const result = await loginWithUserId(userId, password);
-      if (result.success && result.user) {
-        onLoginSuccess(result.user);
-      } else {
-        setErrorMessage(result.error || "Invalid officer credentials. Please try again.");
-      }
-    } catch {
-      setErrorMessage("Unable to connect to authentication gateway.");
-    } finally {
-      setIsLoading(false);
+    const cleanUserId = userId.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanUserId || !cleanPassword) {
+      setErrorMessage('Invalid User ID or password.');
+      return;
     }
-  };
 
-  const handleDemoLogin = async () => {
     setIsLoading(true);
-    setErrorMessage(null);
+
     try {
-      const result = await loginWithUserId('A001', 'admin123');
+      const result = await loginWithUserId(cleanUserId, cleanPassword);
       if (result.success && result.user) {
-        onLoginSuccess(result.user);
+        setIsSuccess(true);
+        setTimeout(() => {
+          onLoginSuccess(result.user);
+        }, 350);
       } else {
-        // Fallback demo user
-        onLoginSuccess({
-          id: 1,
-          user_id: 'A001',
-          username: 'A001',
-          full_name: 'Demo Officer (SIH Evaluator)',
-          role: 'Officer',
-          terminal: 'ICP Raxaul (Indo-Nepal)',
-          department: 'Border Screening Division',
-          designation: 'Screening Officer',
-        });
+        setErrorMessage('Invalid User ID or password.');
       }
     } catch {
-      onLoginSuccess({
-        id: 1,
-        user_id: 'A001',
-        username: 'A001',
-        full_name: 'Demo Officer (SIH Evaluator)',
-        role: 'Officer',
-        terminal: 'ICP Raxaul (Indo-Nepal)',
-        department: 'Border Screening Division',
-        designation: 'Screening Officer',
-      });
+      setErrorMessage('Invalid User ID or password.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen w-full bg-slate-900 flex flex-col md:flex-row font-sans overflow-hidden">
-      {/* Left Column: Navy Security Brand Panel */}
-      <div className="w-full md:w-5/12 lg:w-4/12 bg-[#0B1220] p-8 lg:p-12 text-white flex flex-col justify-between relative overflow-hidden shrink-0 border-r border-slate-800">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-56 h-56 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none" />
-
-        {/* Brand Header */}
-        <div className="relative z-10 space-y-6">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-lg shadow-blue-500/20">
-              <ShieldAlert className="w-6 h-6" />
+    <div className="w-screen h-screen min-h-screen bg-[#F2F3F4] text-[#171717] flex flex-col lg:flex-row font-sans overflow-hidden select-none">
+      {/* LEFT BRANDING PANEL (~35% width, Solid Dark Charcoal #171717) */}
+      <div className="w-full lg:w-[36%] xl:w-[34%] bg-[#171717] text-white p-8 sm:p-10 lg:p-12 flex flex-col justify-between shrink-0 border-r border-[#262626] relative overflow-hidden">
+        {/* Top Branding Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[#1769FF] text-white flex items-center justify-center font-bold text-sm tracking-tight shadow-sm shrink-0">
+              IG
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black tracking-tight text-white leading-none">
-                  IdentityGuard AI
-                </h1>
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  SIH 2026
-                </span>
-              </div>
-              <span className="text-xs text-slate-400 mt-1 block">
-                AI-Powered Identity & Document Screening
+              <h1 className="text-xl font-bold tracking-tight text-white leading-tight">
+                IdentityGuard
+              </h1>
+              <span className="text-[10px] font-bold text-[#888888] tracking-widest uppercase block mt-0.5">
+                IDENTITY & DOCUMENT VERIFICATION
               </span>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-2 pt-2">
-            <h2 className="text-base font-bold text-slate-200 leading-snug">
-              Smart India Hackathon • Problem Statement 26188
-            </h2>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Automated screening system designed for border checkpoint officers to inspect passports, national IDs, and travel documents against synthetic alterations, photo splicing, and checksum anomalies.
-            </p>
+        {/* Center Visual Content: Abstract Identity Document Schematic */}
+        <div className="my-auto py-8 space-y-4">
+          <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-5 space-y-4 max-w-xs shadow-inner">
+            <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-2 text-[10px] font-mono text-[#888888] uppercase tracking-wider">
+              <span>IDENTITY DOCUMENT</span>
+              <span className="w-2 h-2 rounded-full bg-[#1769FF]" />
+            </div>
+
+            <div className="flex gap-3">
+              <div className="w-16 h-20 rounded-md bg-[#2a2a2a] border border-[#383838] flex flex-col items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-full bg-[#383838] mb-1" />
+                <div className="w-8 h-2 rounded bg-[#383838]" />
+              </div>
+              <div className="flex-1 space-y-2 py-1">
+                <div className="h-2.5 w-3/4 rounded bg-[#383838]" />
+                <div className="h-2 w-1/2 rounded bg-[#2a2a2a]" />
+                <div className="h-2 w-2/3 rounded bg-[#2a2a2a]" />
+                <div className="h-2 w-1/3 rounded bg-[#2a2a2a]" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-1 border-t border-[#2e2e2e]">
+              <div className="h-1.5 w-full bg-[#2a2a2a] rounded-xs" />
+              <div className="h-1.5 w-5/6 bg-[#2a2a2a] rounded-xs" />
+            </div>
+          </div>
+
+          {/* Technical UI Labels */}
+          <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono text-[#888888]">
+            <span className="px-2.5 py-1 rounded bg-[#202020] border border-[#2e2e2e]">DOCUMENT</span>
+            <span className="px-2.5 py-1 rounded bg-[#202020] border border-[#2e2e2e]">OCR</span>
+            <span className="px-2.5 py-1 rounded bg-[#202020] border border-[#2e2e2e]">MRZ</span>
+            <span className="px-2.5 py-1 rounded bg-[#202020] border border-[#2e2e2e]">IDENTITY</span>
           </div>
         </div>
 
-        {/* Security Highlights */}
-        <div className="relative z-10 my-6 space-y-2.5">
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300">
-            <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
-            <span>8-Stage Computer Vision & Forensic Pipeline</span>
-          </div>
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>ICAO 9303 Modulo-10 Checksum Engine</span>
-          </div>
-          <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300">
-            <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>PostgreSQL / Supabase Audit Schema</span>
-          </div>
-        </div>
-
-        {/* Terminal Info & Architecture Link */}
-        <div className="relative z-10 pt-4 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
-          <span>Terminal: ICP Raxaul</span>
-          {onViewLanding && (
-            <button
-              onClick={onViewLanding}
-              className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline cursor-pointer"
-            >
-              <span>View Landing & Specs</span>
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          )}
+        {/* Left Bottom Label */}
+        <div className="pt-4 border-t border-[#262626] space-y-0.5">
+          <span className="text-xs font-bold tracking-wider text-white uppercase block">
+            SECURE VERIFICATION TERMINAL
+          </span>
+          <span className="text-xs text-[#888888] font-normal block">
+            Authorized officer access
+          </span>
         </div>
       </div>
 
-      {/* Right Column: High-Contrast Login Interface */}
-      <div className="flex-1 bg-white flex flex-col justify-center px-8 sm:px-14 lg:px-20 py-8 overflow-y-auto">
-        <div className="w-full max-w-md mx-auto space-y-6">
-          {/* Header */}
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold border border-blue-100">
-              <Sparkles className="w-3 h-3" />
-              <span>Authorized Officer Access</span>
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              Identity Screening Login
-            </h2>
-            <p className="text-xs text-slate-500">
-              Sign in with your service credentials or use <strong>Demo Login</strong> for immediate evaluation.
-            </p>
-          </div>
+      {/* RIGHT LOGIN AREA (Light Gray #F2F3F4 Canvas + White Dashboard Card) */}
+      <div className="flex-1 bg-[#F2F3F4] text-[#171717] flex flex-col justify-between p-6 sm:p-10 lg:p-12 relative h-full overflow-y-auto">
+        {/* Top System Status */}
+        <div className="flex items-center justify-end gap-2 text-xs font-mono text-[#777777] font-medium tracking-wide">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span>SYSTEM ONLINE</span>
+          <span className="text-[#cccccc]">|</span>
+          <span>TERMINAL 01</span>
+        </div>
 
-          {/* Error Banner */}
-          {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* User ID Field */}
+        {/* Center White Login Card */}
+        <div className="w-full max-w-[440px] mx-auto my-auto py-4">
+          <div className="bg-white border border-[#E3E5E8] rounded-2xl p-8 sm:p-10 shadow-xs space-y-6">
+            {/* Header */}
             <div className="space-y-1">
-              <label
-                htmlFor="input-userid"
-                className="block text-xs font-bold text-slate-700 uppercase tracking-wider"
-              >
-                User ID
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <User className="w-4 h-4" />
-                </div>
+              <span className="text-xs font-semibold text-[#777777] uppercase tracking-wider block">
+                OFFICER ACCESS
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-[#171717] tracking-tight">
+                Welcome back
+              </h2>
+              <p className="text-xs text-[#777777] font-normal leading-relaxed mt-1">
+                Sign in to continue to the IdentityGuard verification terminal.
+              </p>
+            </div>
+
+            {/* Error Banner */}
+            {errorMessage && (
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-2.5 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Officer ID Field */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="input-officer-id"
+                  className="block text-xs font-semibold text-[#171717] uppercase tracking-wider"
+                >
+                  OFFICER ID
+                </label>
                 <input
-                  id="input-userid"
+                  id="input-officer-id"
                   type="text"
                   required
+                  autoComplete="username"
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
-                  placeholder="e.g. A001"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all font-mono"
+                  placeholder="Enter Officer ID"
+                  className="w-full h-12 bg-white border border-[#E3E5E8] rounded-xl text-xs text-[#171717] placeholder:text-[#999999] focus:outline-none focus:border-[#1769FF] focus:ring-2 focus:ring-[#1769FF]/20 px-4 transition-all font-mono"
                 />
               </div>
-            </div>
 
-            {/* Password Field */}
-            <div className="space-y-1">
-              <label
-                htmlFor="input-password"
-                className="block text-xs font-bold text-slate-700 uppercase tracking-wider"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <input
-                  id="input-password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+              {/* Password Field */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="input-password"
+                  className="block text-xs font-semibold text-[#171717] uppercase tracking-wider"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  PASSWORD
+                </label>
+                <div className="relative">
+                  <input
+                    id="input-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="w-full h-12 pl-4 pr-11 bg-white border border-[#E3E5E8] rounded-xl text-xs text-[#171717] placeholder:text-[#999999] focus:outline-none focus:border-[#1769FF] focus:ring-2 focus:ring-[#1769FF]/20 transition-all font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#999999] hover:text-[#171717] transition-colors cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  id="btn-login-submit"
+                  disabled={isLoading || isSuccess}
+                  className="w-full h-12 bg-[#1769FF] hover:bg-[#1255d4] active:bg-[#0e43a8] text-white text-xs font-semibold tracking-wide rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isSuccess ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-white" />
+                      <span>AUTHENTICATED</span>
+                    </>
+                  ) : isLoading ? (
+                    <span>SIGNING IN...</span>
+                  ) : (
+                    <>
+                      <span>SIGN IN</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
+            </form>
+
+            {/* Small Terminal Information Notice */}
+            <div className="pt-2 border-t border-[#F0F1F2] flex items-center justify-between text-[11px] text-[#777777] font-mono">
+              <span>Secure Verification Terminal</span>
+              <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                System Online
+              </span>
             </div>
-
-            {/* Action Buttons: Login + Demo Login */}
-            <div className="space-y-2.5 pt-2">
-              <button
-                type="submit"
-                id="btn-login-submit"
-                disabled={isLoading}
-                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-              >
-                <span>{isLoading ? 'Authenticating...' : 'Login'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-
-              <button
-                type="button"
-                id="btn-demo-login"
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-              >
-                <Zap className="w-4 h-4 fill-white" />
-                <span>Demo Login (Instant Evaluator Access)</span>
-              </button>
-            </div>
-          </form>
-
-          {/* Prototype Notice */}
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-            <span>Demo credentials: A001 / admin123</span>
-            <span className="text-emerald-600 font-semibold">Ready for SIH</span>
           </div>
+        </div>
+
+        {/* Bottom Right Footer */}
+        <div className="text-right text-[11px] text-[#777777] font-mono tracking-wide">
+          IdentityGuard • Secure Verification Terminal v2.4
         </div>
       </div>
     </div>

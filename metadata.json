@@ -1,6 +1,6 @@
 {
-  "name": "SSB Document Screening - AI-Based Identity Verification",
-  "description": "AI-Based Fake Identity & Document Screening System for Sashastra Seema Bal (SSB), Ministry of Home Affairs. SIH 2026 Problem Statement 26188.",
+  "name": "IdentityGuard - Identity & Document Verification",
+  "description": "Secure enterprise identity and document verification system for passports, national IDs, and driving licenses with automated authenticity checks, tampering detection, and risk scoring.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

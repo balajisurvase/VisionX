@@ -39,8 +39,9 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
 
   const evalResult: ExpiryEvaluation = evaluateRealTimeExpiry(expiryDateStr, currentClock);
 
-  const formattedUtcTime = currentClock.toLocaleTimeString('en-GB', {
-    timeZone: 'UTC',
+  const formattedLocalTime = currentClock.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
     hour12: false,
   });
 
@@ -105,10 +106,10 @@ export const RealTimeTimelineCard: React.FC<RealTimeTimelineCardProps> = ({
           <Clock className="w-3.5 h-3.5 opacity-70 animate-pulse" />
           <div className="leading-tight">
             <span className="text-[10px] opacity-60 uppercase font-bold block">
-              Reference Time (UTC)
+              Reference Time (Local)
             </span>
             <span className="font-bold text-gray-900 text-xs">
-              {evalResult.currentReferenceFormatted} • {formattedUtcTime}
+              {evalResult.currentReferenceFormatted} • {formattedLocalTime}
             </span>
           </div>
         </div>

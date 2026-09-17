@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { SystemBootLoader } from './components/SystemBootLoader';
 import { Login } from './pages/Login';
 import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
@@ -21,6 +22,7 @@ export function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [activeDemoScenario, setActiveDemoScenario] = useState<DemoScenario | null>(null);
   const [inspectedRecord, setInspectedRecord] = useState<VerificationRecord | null>(null);
+  const [isBooting, setIsBooting] = useState<boolean>(true);
 
   // Automatically logout on page reload / fresh startup per security requirements
   useEffect(() => {
@@ -72,6 +74,11 @@ export function App() {
   const handleVerifySpecificDoc = (docNumber: string) => {
     setCurrentPath('/verify');
   };
+
+  // System boot loading animation on initial page load / refresh
+  if (isBooting) {
+    return <SystemBootLoader onComplete={() => setIsBooting(false)} />;
+  }
 
   // If user requests landing page
   if (currentPath === '/landing') {

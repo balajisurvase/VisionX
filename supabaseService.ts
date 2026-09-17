@@ -778,9 +778,9 @@ export async function persistVerification(input: VerificationPersistenceInput) {
 
       if (!uploadErr) {
         storageUploadSuccess = true;
-        console.log(`[Supabase Storage] Document saved to ${primaryStoragePath}`);
+        console.log(`[Supabase Storage] Document upload: SUCCESS bucket=${SUPABASE_STORAGE_BUCKETS.DOCUMENTS} path=${primaryStoragePath}`);
       } else {
-        console.warn(`[Supabase Storage] Notice uploading document:`, uploadErr.message);
+        console.warn(`[Supabase Storage] Document upload: FAILED bucket=${SUPABASE_STORAGE_BUCKETS.DOCUMENTS} path=${primaryStoragePath} error=${uploadErr.message}`);
       }
 
       if (personFileBuffer && personFilename) {
@@ -1126,3 +1126,239 @@ function formatJoinedRecord(
     },
   };
 }
+
+// -----------------------------------------------------------------------------
+// Registered Identity Registry & Database Cross-Match Functions
+// -----------------------------------------------------------------------------
+
+/**
+ * Normalizes document number for accurate registry lookup.
+ * Trims whitespace, converts to uppercase, removes accidental spaces, hyphens, and OCR noise.
+ */
+export function normalize_document_number(raw: string | undefined | null): string {
+  if (!raw) return '';
+  let clean = String(raw).trim().toUpperCase();
+  // Strip common OCR prefix labels like "Passport No.", "Doc:", "No."
+  clean = clean.replace(/^(PASSPORT\s*(NO|NUMBER)?[:.]?\s*|DOC(UMENT)?\s*(NO|NUMBER)?[:.]?\s*|ID[:.]?\s*)/i, '');
+  // Strip spaces, dashes, dots, underscores
+  clean = clean.replace(/[\s\-_.]/g, '');
+  // Strip trailing chevron characters if any
+  clean = clean.replace(/<.*$/, '');
+  return clean;
+}
+
+export interface RegisteredDocumentAndPersonResult {
+  success: boolean;
+  status: 'MATCH' | 'NOT_FOUND' | 'DOCUMENT_NUMBER_NOT_FOUND' | 'DATABASE_RELATIONSHIP_ERROR' | 'DATABASE_LOOKUP_ERROR';
+  error?: string;
+  normalizedDocNumber: string;
+  doc: any | null;
+  person: any | null;
+}
+
+/**
+ * Executes direct SQL query equivalent on Supabase:
+ * SELECT rd.*, rp.*
+ * FROM registered_documents rd
+ * JOIN registered_persons rp
+ * ON rp.id = rd.person_id
+ * WHERE rd.document_number = :normalized_doc_number;
+ */
+export async function findRegisteredDocumentAndPerson(
+  rawDocumentNumber: string | undefined | null
+): Promise<RegisteredDocumentAndPersonResult> {
+  const normDocNum = normalize_document_number(rawDocumentNumber);
+  console.log('[IDENTITY LOOKUP]');
+  console.log(`Extracted document number: ${rawDocumentNumber || 'NONE'}`);
+  console.log(`Normalized document number: ${normDocNum || 'NONE'}`);
+
+  if (!normDocNum) {
+    console.log('Registered document found: false');
+    console.log('Registered person found: false');
+    console.log('Person code: NONE');
+    return {
+      success: false,
+      status: 'DOCUMENT_NUMBER_NOT_FOUND',
+      error: 'No document number provided or extracted from credential',
+      normalizedDocNumber: '',
+      doc: null,
+      person: null,
+    };
+  }
+
+  const supabaseClient = getClient();
+  if (!supabaseClient) {
+    console.warn('[IDENTITY LOOKUP] Supabase client is not available. Status: DATABASE_LOOKUP_ERROR');
+    return {
+      success: false,
+      status: 'DATABASE_LOOKUP_ERROR',
+      error: 'Database connection is not configured or offline',
+      normalizedDocNumber: normDocNum,
+      doc: null,
+      person: null,
+    };
+  }
+
+  try {
+    const { data: doc, error: docErr } = await supabaseClient
+      .from('registered_documents')
+      .select('*')
+      .eq('document_number', normDocNum)
+      .maybeSingle();
+
+    if (docErr) {
+      console.log('[IDENTITY LOOKUP] Supabase document query notice (falling back to local registry):', docErr.message);
+      return {
+        success: false,
+        status: 'NOT_FOUND',
+        normalizedDocNumber: normDocNum,
+        doc: null,
+        person: null,
+      };
+    }
+
+    if (!doc) {
+      console.log('Registered document found: false');
+      console.log('Registered person found: false');
+      console.log('Person code: NONE');
+      return {
+        success: false,
+        status: 'NOT_FOUND',
+        normalizedDocNumber: normDocNum,
+        doc: null,
+        person: null,
+      };
+    }
+
+    console.log('Registered document found: true');
+
+    // Person ID Integrity check
+    if (!doc.person_id) {
+      console.error('[IDENTITY LOOKUP] Database integrity error: Document record lacks person_id');
+      return {
+        success: false,
+        status: 'DATABASE_RELATIONSHIP_ERROR',
+        error: 'Document record is missing person_id relationship',
+        normalizedDocNumber: normDocNum,
+        doc,
+        person: null,
+      };
+    }
+
+    const { data: person, error: personErr } = await supabaseClient
+      .from('registered_persons')
+      .select('*')
+      .eq('id', doc.person_id)
+      .maybeSingle();
+
+    if (personErr) {
+      console.log('[IDENTITY LOOKUP] Supabase person query notice:', personErr.message);
+      return {
+        success: false,
+        status: 'NOT_FOUND',
+        normalizedDocNumber: normDocNum,
+        doc,
+        person: null,
+      };
+    }
+
+    if (!person) {
+      console.error(`[IDENTITY LOOKUP] Database integrity error: person_id ${doc.person_id} not found in registered_persons`);
+      return {
+        success: false,
+        status: 'DATABASE_RELATIONSHIP_ERROR',
+        error: `Registered document points to non-existent person_id: ${doc.person_id}`,
+        normalizedDocNumber: normDocNum,
+        doc,
+        person: null,
+      };
+    }
+
+    console.log('Registered person found: true');
+    console.log(`Person code: ${person.person_code}`);
+
+    return {
+      success: true,
+      status: 'MATCH',
+      normalizedDocNumber: normDocNum,
+      doc,
+      person,
+    };
+  } catch (err: any) {
+    console.error('[IDENTITY LOOKUP] Unexpected exception during database lookup:', err);
+    return {
+      success: false,
+      status: 'DATABASE_LOOKUP_ERROR',
+      error: err.message || 'Unexpected database error',
+      normalizedDocNumber: normDocNum,
+      doc: null,
+      person: null,
+    };
+  }
+}
+
+/**
+ * Fetches all registered persons with their associated documents from Supabase.
+ */
+export async function fetchRegisteredPersonsFromSupabase(): Promise<any[]> {
+  const supabaseClient = getClient();
+  if (!supabaseClient) return [];
+
+  try {
+    const { data: persons, error: personErr } = await supabaseClient
+      .from('registered_persons')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (personErr || !persons) {
+      console.warn('[Supabase] Failed to fetch registered persons:', personErr);
+      return [];
+    }
+
+    const { data: docs, error: docErr } = await supabaseClient
+      .from('registered_documents')
+      .select('*');
+
+    const allDocs = docErr || !docs ? [] : docs;
+
+    return persons.map((p) => {
+      const pDocs = allDocs
+        .filter((d) => d.person_id === p.id)
+        .map((d) => ({
+          id: d.id,
+          person_id: p.id,
+          document_type: d.document_type === 'PASSPORT' ? 'Passport' : d.document_type,
+          document_number: d.document_number,
+          issue_date: d.issue_date || '',
+          expiry_date: d.expiry_date || '',
+          issuing_country: d.issuing_country || d.country_code || '',
+          issuing_authority: d.issuing_authority || '',
+          document_hash: d.document_hash || '',
+          status: d.status === 'ACTIVE' ? 'VALID' : d.status || 'VALID',
+          created_at: d.created_at,
+        }));
+
+      return {
+        id: p.id,
+        person_code: p.person_code,
+        full_name: p.full_name,
+        date_of_birth: p.date_of_birth,
+        nationality: p.nationality,
+        gender: p.gender === 'F' ? 'Female' : p.gender === 'M' ? 'Male' : p.gender,
+        status: p.status || 'ACTIVE',
+        photo_url: '',
+        email: `${p.person_code.toLowerCase()}@registry.local`,
+        phone: '',
+        address: p.place_of_birth || '',
+        notes: `Registered person profile (${p.person_code}).`,
+        documents: pDocs,
+        created_at: p.created_at,
+        biometric_storage_path: p.biometric_storage_path || null,
+      };
+    });
+  } catch (err) {
+    console.warn('[Supabase] Error in fetchRegisteredPersonsFromSupabase:', err);
+    return [];
+  }
+}
+

@@ -27,7 +27,6 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, user }) => {
         now.toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit',
           hour12: true,
         })
       );
@@ -47,21 +46,21 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, user }) => {
     : 'RK';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 px-6 flex items-center justify-between shrink-0 z-20 font-sans shadow-xs">
+    <header className="h-16 bg-[#090D16] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0 z-20 font-sans text-slate-100 shadow-sm">
       {/* Page Context */}
       <div className="flex items-center gap-3 min-w-0">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base font-bold text-[#111827] tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-base font-bold text-white tracking-tight">
               {title}
             </h1>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#EEF2FF] text-[#4F46E5]">
-              <Radio className="w-2.5 h-2.5 animate-pulse" />
-              ICP Raxaul Terminal 01
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Terminal Active
             </span>
           </div>
           {subtitle && (
-            <p className="text-xs text-gray-500 font-normal mt-0.5">
+            <p className="text-xs text-slate-400 font-normal mt-0.5 truncate max-w-xl">
               {subtitle}
             </p>
           )}
@@ -72,30 +71,30 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle, user }) => {
       <div className="flex items-center gap-4">
         {/* Date & Time */}
         <div className="hidden md:flex flex-col text-right">
-          <span className="text-xs font-semibold text-[#111827] flex items-center gap-1 justify-end">
-            <Clock className="w-3 h-3 text-gray-400" />
+          <span className="text-xs font-mono font-semibold text-slate-200 flex items-center gap-1.5 justify-end">
+            <Clock className="w-3.5 h-3.5 text-blue-400" />
             {timeStr || '03:45 PM'}
           </span>
-          <span className="text-[11px] text-gray-500 font-medium">
+          <span className="text-[11px] text-slate-400 font-mono">
             {dateStr || 'Sat, Sep 5, 2026'}
           </span>
         </div>
 
-        <div className="h-8 w-px bg-gray-200 hidden md:block" />
+        <div className="h-7 w-px bg-slate-800 hidden md:block" />
 
-        {/* Officer info & Initials on Indigo */}
+        {/* Officer info & Initials */}
         <div className="flex items-center gap-2.5">
           <div className="hidden sm:flex flex-col text-right">
-            <span className="text-xs font-bold text-[#111827] leading-snug">
+            <span className="text-xs font-bold text-white leading-snug">
               {user?.full_name || 'Inspector Rajeshwar'}
             </span>
-            <span className="text-[11px] text-gray-500 font-mono">
+            <span className="text-[10px] text-blue-400 font-mono font-semibold">
               {user?.user_id || 'officer001'}
             </span>
           </div>
 
           <div
-            className="w-9 h-9 rounded-full bg-[#4F46E5] text-white flex items-center justify-center font-bold text-xs shadow-xs"
+            className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-blue-600/30 border border-blue-500/30"
             title={user?.full_name || 'Officer'}
           >
             {initials}

@@ -137,7 +137,7 @@ export const History: React.FC<HistoryProps> = ({
   const getStatusBadge = (status: string, score: number) => {
     if (status === 'VERIFIED' || score <= 30) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-800/80">
           <CheckCircle2 className="w-3.5 h-3.5" />
           VERIFIED
         </span>
@@ -145,14 +145,14 @@ export const History: React.FC<HistoryProps> = ({
     }
     if (status === 'SUSPICIOUS' || (score > 30 && score <= 70)) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-amber-950/60 text-amber-400 border border-amber-800/80">
           <AlertTriangle className="w-3.5 h-3.5" />
           SUSPICIOUS
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-100 text-red-800">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-rose-950/60 text-rose-400 border border-rose-800/80">
         <XCircle className="w-3.5 h-3.5" />
         REJECTED
       </span>
@@ -160,41 +160,41 @@ export const History: React.FC<HistoryProps> = ({
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-900">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-100">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-950/80 text-blue-400 border border-blue-800/80">
               Audit Logs & Ledger
             </span>
-            <span className="text-xs text-slate-500 font-medium">
+            <span className="text-xs text-slate-400 font-mono">
               Tamper-Evident SHA-256 Hash Chain
             </span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight mt-1">
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-1">
             Verification History & Forensic Audit Trail
           </h1>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
+        <div className="flex items-center bg-[#0D1322] p-1 rounded-xl border border-slate-800 text-xs">
           <button
             onClick={() => setActiveTab('screenings')}
-            className={`px-4 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+            className={`px-4 py-1.5 rounded-lg font-mono font-bold transition-all cursor-pointer ${
               activeTab === 'screenings'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             Verification History ({records.length})
           </button>
           <button
             onClick={() => setActiveTab('blockchain')}
-            className={`px-4 py-1.5 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+            className={`px-4 py-1.5 rounded-lg font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               activeTab === 'blockchain'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
             <Lock className="w-3.5 h-3.5" />
@@ -207,7 +207,7 @@ export const History: React.FC<HistoryProps> = ({
       {activeTab === 'screenings' && (
         <div className="space-y-4">
           {/* Search, Status, Date & Risk Filters */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="p-4 rounded-2xl bg-[#0D1322] border border-slate-800/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Search Input */}
             <div className="relative flex-1 max-w-sm">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -216,7 +216,7 @@ export const History: React.FC<HistoryProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search applicant name, doc no, verification ID..."
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-600"
+                className="w-full pl-9 pr-3 py-2 bg-[#090D16] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:border-blue-500 transition-all font-mono outline-none"
               />
             </div>
 
@@ -226,10 +226,10 @@ export const History: React.FC<HistoryProps> = ({
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
                     statusFilter === st
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-50 text-slate-600 border border-slate-200 hover:text-slate-900'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-[#090D16] text-slate-400 border border-slate-800 hover:text-white'
                   }`}
                 >
                   {st}
@@ -239,18 +239,18 @@ export const History: React.FC<HistoryProps> = ({
 
             {/* Filter by Date & Sort by Risk */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs">
+              <div className="flex items-center gap-1.5 bg-[#090D16] border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 <input
                   type="date"
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="bg-transparent text-xs text-slate-700 outline-hidden"
+                  className="bg-transparent text-xs text-slate-200 font-mono outline-none"
                 />
                 {dateFilter && (
                   <button
                     onClick={() => setDateFilter('')}
-                    className="text-slate-400 hover:text-slate-600 text-[10px] font-bold"
+                    className="text-slate-400 hover:text-white text-[10px] font-mono font-bold"
                   >
                     Clear
                   </button>
@@ -259,10 +259,10 @@ export const History: React.FC<HistoryProps> = ({
 
               <button
                 onClick={toggleRiskSort}
-                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-2 rounded-xl text-xs font-mono font-bold border transition-colors flex items-center gap-1.5 cursor-pointer ${
                   riskSortOrder !== 'none'
-                    ? 'bg-blue-50 border-blue-300 text-blue-700'
-                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                    ? 'bg-blue-950/80 border-blue-800 text-blue-400'
+                    : 'bg-[#090D16] border-slate-800 text-slate-300 hover:bg-slate-800'
                 }`}
                 title="Sort by risk score"
               >
@@ -273,10 +273,10 @@ export const History: React.FC<HistoryProps> = ({
           </div>
 
           {/* Records Table */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+          <div className="bg-[#0D1322] border border-slate-800/90 rounded-2xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                <thead className="bg-[#090D16] text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
                   <tr>
                     <th className="py-3 px-4">Verification ID</th>
                     <th className="py-3 px-4">Date</th>
@@ -287,20 +287,20 @@ export const History: React.FC<HistoryProps> = ({
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-slate-800">
+                <tbody className="divide-y divide-slate-800/60 text-slate-200">
                   {filteredRecords.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="py-16 text-center text-slate-400">
                         <div className="flex flex-col items-center justify-center space-y-2 max-w-sm mx-auto">
-                          <FileCheck className="w-8 h-8 text-slate-300" />
-                          <div className="font-bold text-sm text-slate-900">No screening records match</div>
-                          <p className="text-xs text-slate-500">
+                          <FileCheck className="w-8 h-8 text-slate-500" />
+                          <div className="font-bold text-sm text-white">No screening records match</div>
+                          <p className="text-xs text-slate-400 font-mono">
                             Clear active filters or run a new document verification.
                           </p>
                           {onNavigate && (
                             <button
                               onClick={() => onNavigate('/verify')}
-                              className="mt-2 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer transition-colors shadow-xs"
+                              className="mt-2 px-4 py-2 rounded-xl text-xs font-mono font-bold bg-blue-600 hover:bg-blue-500 text-white cursor-pointer transition-colors shadow-sm"
                             >
                               New Verification
                             </button>
@@ -310,17 +310,17 @@ export const History: React.FC<HistoryProps> = ({
                     </tr>
                   ) : (
                     filteredRecords.map((rec) => (
-                      <tr key={rec.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="py-3 px-4 font-mono font-bold text-blue-600">
+                      <tr key={rec.id} className="hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3 px-4 font-mono font-bold text-blue-400">
                           {rec.verification_id}
                           <div className="text-[10px] text-slate-400 font-sans font-normal">
                             {rec.applicant_name}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                        <td className="py-3 px-4 text-slate-400 font-mono text-[11px]">
                           {rec.timestamp || (rec.created_at ? rec.created_at.slice(0, 10) : '2026-09-05')}
                         </td>
-                        <td className="py-3 px-4 font-medium text-slate-800">
+                        <td className="py-3 px-4 font-medium text-slate-200">
                           {rec.document_type}
                           <div className="text-[10px] text-slate-400 font-mono">
                             {rec.document_number}
@@ -333,16 +333,16 @@ export const History: React.FC<HistoryProps> = ({
                           <span
                             className={`font-mono font-bold text-xs ${
                               rec.risk_score <= 30
-                                ? 'text-emerald-700'
+                                ? 'text-emerald-400'
                                 : rec.risk_score <= 70
-                                ? 'text-amber-700'
-                                : 'text-red-700'
+                                ? 'text-amber-400'
+                                : 'text-rose-400'
                             }`}
                           >
                             {rec.risk_score} / 100
                           </span>
                         </td>
-                        <td className="py-3 px-4 font-mono text-xs text-slate-600">
+                        <td className="py-3 px-4 font-mono text-xs text-slate-400">
                           {rec.officer_id || rec.verified_by || 'Insp. Rajeshwar'}
                         </td>
                         <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
@@ -351,18 +351,18 @@ export const History: React.FC<HistoryProps> = ({
                               if (onInspectRecord) onInspectRecord(rec);
                               else if (onNavigate) onNavigate('/verify');
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono font-bold text-[11px] border border-slate-700 transition-colors cursor-pointer"
                             title="Inspect in Verification Console"
                           >
                             <Eye className="w-3.5 h-3.5" />
-                            <span>View</span>
+                            <span>Inspect</span>
                           </button>
                           <button
                             onClick={() => {
                               if (onViewReport) onViewReport(rec);
                               else if (onNavigate) onNavigate('/reports');
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-950/80 hover:bg-blue-900 text-blue-400 font-mono font-bold text-[11px] border border-blue-800 transition-colors cursor-pointer"
                             title="Generate Official Report"
                           >
                             <FileText className="w-3.5 h-3.5" />

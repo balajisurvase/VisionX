@@ -62,35 +62,40 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
   const getStatusBadge = (status: string, score: number) => {
     if (status === 'VERIFIED' || score <= 30) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-          <CheckCircle2 className="w-3.5 h-3.5" />
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-950/60 text-emerald-400 border border-emerald-800/80 text-xs font-mono font-bold">
+          <CheckCircle2 className="w-4 h-4" />
           <span>VERIFIED (LOW RISK)</span>
         </span>
       );
     }
     if (status === 'SUSPICIOUS' || (score > 30 && score <= 70)) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">
-          <AlertTriangle className="w-3.5 h-3.5" />
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-amber-950/60 text-amber-400 border border-amber-800/80 text-xs font-mono font-bold">
+          <AlertTriangle className="w-4 h-4" />
           <span>SUSPICIOUS (MEDIUM RISK)</span>
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-800 text-xs font-bold">
-        <XCircle className="w-3.5 h-3.5" />
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-rose-950/60 text-rose-400 border border-rose-800/80 text-xs font-mono font-bold">
+        <XCircle className="w-4 h-4" />
         <span>REJECTED (HIGH RISK)</span>
       </span>
     );
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-900">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 font-sans text-slate-100">
       {/* Top Header & Print Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Verification Reports Center</h1>
-          <p className="text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-blue-950/80 text-blue-400 border border-blue-800/80">
+              IdentityGuard Certificate Engine
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-1">Verification Reports Center</h1>
+          <p className="text-xs text-slate-400">
             Generate and export official AI screening verdicts and multi-layer forensic certificates.
           </p>
         </div>
@@ -99,25 +104,25 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
           <button
             onClick={handlePrint}
             id="btn-print-report"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-mono font-bold shadow-md shadow-blue-600/30 transition-colors cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>Download PDF Report</span>
+            <span>Export Official PDF Dossier</span>
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Record Selector (Hidden during print) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-4 space-y-4 shadow-xs print:hidden">
+        <div className="lg:col-span-4 bg-[#0D1322] rounded-2xl border border-slate-800/90 p-4 space-y-4 shadow-sm print:hidden">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3.5 top-2.5 text-slate-400" />
             <input
               type="text"
               placeholder="Search reports by ID, name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-600"
+              className="w-full pl-9 pr-3 py-2 bg-[#090D16] border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:border-blue-500 transition-all font-mono outline-none"
             />
           </div>
 
@@ -130,30 +135,30 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
                   onClick={() => setSelectedRecord(r)}
                   className={`w-full text-left p-3 rounded-xl border text-xs transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-blue-50 border-blue-500 shadow-xs ring-1 ring-blue-500/20'
-                      : 'bg-slate-50 hover:bg-slate-100 border-slate-200'
+                      ? 'bg-blue-950/70 border-blue-600 text-white shadow-sm ring-1 ring-blue-500/30'
+                      : 'bg-[#090D16] hover:bg-slate-800/60 border-slate-800 text-slate-300'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-[11px] font-bold text-slate-800">
+                    <span className="font-mono text-[11px] font-bold text-blue-400">
                       {r.verification_id}
                     </span>
                     <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
                         r.verification_status === 'VERIFIED'
-                          ? 'bg-emerald-100 text-emerald-800'
+                          ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/60'
                           : r.verification_status === 'SUSPICIOUS'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-amber-950/60 text-amber-400 border border-amber-800/60'
+                          : 'bg-rose-950/60 text-rose-400 border border-rose-800/60'
                       }`}
                     >
                       {r.verification_status}
                     </span>
                   </div>
-                  <div className="font-bold text-slate-900 truncate">{r.applicant_name}</div>
-                  <div className="text-[11px] text-slate-500 flex items-center justify-between mt-1">
+                  <div className="font-bold text-white truncate">{r.applicant_name}</div>
+                  <div className="text-[11px] text-slate-400 flex items-center justify-between mt-1 font-mono">
                     <span>{r.document_type} • {r.document_number}</span>
-                    <span className="font-mono">Risk: {r.risk_score}</span>
+                    <span className="text-slate-300 font-bold">Risk: {r.risk_score}</span>
                   </div>
                 </button>
               );
@@ -180,14 +185,14 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-400 font-mono">
-                    Official Forensic Verification Docket • SIH 2026 Evaluation
+                    Official Forensic Verification Docket • IdentityGuard System
                   </p>
                 </div>
 
                 <div className="text-left sm:text-right text-xs text-slate-500 font-mono space-y-0.5">
                   <div><strong className="text-slate-700">Verification ID:</strong> {selectedRecord.verification_id}</div>
                   <div><strong className="text-slate-700">Date:</strong> {selectedRecord.timestamp || new Date().toISOString().split('T')[0]}</div>
-                  <div><strong className="text-slate-700">Officer:</strong> {selectedRecord.officer_id || 'Insp. Rajeshwar (A001)'}</div>
+                  <div><strong className="text-slate-700">Officer:</strong> {selectedRecord.officer_id || 'officer001'}</div>
                   <div><strong className="text-slate-700">Document Type:</strong> {selectedRecord.document_type}</div>
                 </div>
               </div>
@@ -249,11 +254,11 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
                   </div>
                   <div>
                     <span className="text-slate-400 text-[10px] block">Date of Expiry</span>
-                    <span className="font-mono text-slate-900">{selectedRecord.date_of_expiry || '2030-05-09'}</span>
+                    <span className="font-mono text-slate-900">{selectedRecord.date_of_expiry || 'NOT DETECTED'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 text-[10px] block">Issuer / Authority</span>
-                    <span className="text-slate-900">{selectedRecord.ocr_data?.issuing_country || 'Republic of India'}</span>
+                    <span className="text-slate-900">{selectedRecord.ocr_data?.issuing_country || selectedRecord.nationality || 'NOT DETECTED'}</span>
                   </div>
                 </div>
               </div>
@@ -274,7 +279,9 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
                       <div className="font-bold text-slate-800">OCR Text Consistency</div>
                       <div className="text-[11px] text-slate-500">Cross-field coherence between printed Visual Inspection Zone (VIZ) & MRZ</div>
                     </div>
-                    <span className="text-emerald-700 font-bold font-mono">✓ Passed</span>
+                    <span className={selectedRecord.ocr_status === 'PASSED' ? 'text-emerald-700 font-bold font-mono' : 'text-amber-700 font-bold font-mono'}>
+                      {selectedRecord.ocr_status === 'PASSED' ? '✓ Passed' : '⚠ Warning'}
+                    </span>
                   </div>
 
                   <div className="p-3 border-b border-slate-100 flex items-center justify-between">
@@ -282,15 +289,19 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
                       <div className="font-bold text-slate-800">MRZ & ICAO 9303 Checksum</div>
                       <div className="text-[11px] text-slate-500">Modulo 10 7-3-1 weight algorithms for doc no., DOB & expiry</div>
                     </div>
-                    <span className="text-emerald-700 font-bold font-mono">✓ Passed</span>
+                    <span className={selectedRecord.mrz_valid ? 'text-emerald-700 font-bold font-mono' : 'text-red-700 font-bold font-mono'}>
+                      {selectedRecord.mrz_valid ? '✓ Passed' : '✕ Failed / Not Detected'}
+                    </span>
                   </div>
 
                   <div className="p-3 border-b border-slate-100 flex items-center justify-between">
                     <div>
                       <div className="font-bold text-slate-800">Document Authenticity</div>
-                      <div className="text-[11px] text-slate-500">Hologram alignment, guilloche micro-patterns, security font typography</div>
+                      <div className="text-[11px] text-slate-500">Layout geometry, micro-patterns, security font typography</div>
                     </div>
-                    <span className="text-emerald-700 font-bold font-mono">✓ Passed</span>
+                    <span className={selectedRecord.final_result === 'AUTHENTIC' ? 'text-emerald-700 font-bold font-mono' : 'text-amber-700 font-bold font-mono'}>
+                      {selectedRecord.final_result === 'AUTHENTIC' ? '✓ Passed' : selectedRecord.final_result}
+                    </span>
                   </div>
 
                   <div className="p-3 border-b border-slate-100 flex items-center justify-between">
@@ -305,11 +316,11 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
 
                   <div className="p-3 flex items-center justify-between">
                     <div>
-                      <div className="font-bold text-slate-800">Face Verification (Biometric)</div>
-                      <div className="text-[11px] text-slate-500">1:1 facial cosine comparison between credential photo & live desk capture</div>
+                      <div className="font-bold text-slate-800">Document Portrait Extraction</div>
+                      <div className="text-[11px] text-slate-500">Document photograph localization and cropped boundary isolation</div>
                     </div>
                     <span className="text-emerald-700 font-bold font-mono">
-                      ✓ Passed ({selectedRecord.face_details?.match_score ?? 94}%)
+                      ✓ Isolated
                     </span>
                   </div>
                 </div>
@@ -332,10 +343,10 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
                   <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">Final Recommendation</h4>
                   <p className="text-xs text-blue-800 leading-relaxed">
                     {selectedRecord.verification_status === 'VERIFIED'
-                      ? 'Clear traveler for primary border entry. Document credentials verify successfully against ICAO 9303 standards.'
+                      ? 'Document verified successfully. No significant automated anomalies or tampering indicators detected.'
                       : selectedRecord.verification_status === 'SUSPICIOUS'
-                      ? 'Refer traveler to Secondary Screening Counter for physical passport UV examination and biometric cross-verification.'
-                      : 'Refuse entry. Substantial forgery or tampering identified. Retain credential for forensic chain of custody.'}
+                      ? 'Manual review recommended. Potential verification anomalies detected. Secondary inspection recommended.'
+                      : 'Significant verification concerns detected. Critical tampering, expiry or data inconsistency flagged. Retain document for detailed review.'}
                   </p>
                 </div>
               </div>
@@ -349,7 +360,7 @@ export const Reports: React.FC<ReportsProps> = ({ initialRecord, onNavigateToVer
 
                 <div className="text-right">
                   <div className="font-bold text-slate-700">Digital Seal Verified</div>
-                  <div className="text-[10px]">Ministry of Home Affairs • SIH 2026</div>
+                  <div className="text-[10px]">IdentityGuard Verification Engine • Verified Authenticity</div>
                 </div>
               </div>
             </div>

@@ -46,8 +46,8 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
   const handleRotate = () => setRotation((r) => (r + 90) % 360);
 
   const rawExp = record.date_of_expiry || record.ocr_data?.date_of_expiry;
-  const expIso = normalizeIsoDate(rawExp, '2031-08-20');
-  const expVisual = formatVisualDate(expIso);
+  const expIso = normalizeIsoDate(rawExp, '');
+  const expVisual = expIso ? formatVisualDate(expIso) : 'Not Detected';
   const realTimeEval = evaluateRealTimeExpiry(expIso);
 
   const isTampered = false;
@@ -55,32 +55,28 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
 
   const dobIso = normalizeIsoDate(
     record.date_of_birth || record.ocr_data?.date_of_birth,
-    '1998-03-14'
+    ''
   );
-  const dobVisual = formatVisualDate(dobIso);
+  const dobVisual = dobIso ? formatVisualDate(dobIso) : 'Not Detected';
 
-  const rawDocNo = (record.document_number || record.ocr_data?.document_number || 'DEMOPPT001')
+  const rawDocNo = (record.document_number || record.ocr_data?.document_number || '')
     .replace(/[^A-Z0-9]/gi, '')
     .toUpperCase();
 
-  const computedMrz = generateTd3Mrz({
-    documentType: record.document_type,
-    countryCode: record.nationality?.slice(0, 3) || 'IND',
-    fullName: record.applicant_name || 'AARAV SHARMA',
-    documentNumber: rawDocNo,
-    nationality: record.nationality || 'IND',
-    dateOfBirth: dobIso,
-    dateOfExpiry: expIso,
-    gender: record.ocr_data?.gender || 'M',
-  });
+  const isMrzDetected = record.mrz_info?.detected === true || Boolean(record.ocr_data?.mrz_line_1 && record.ocr_data.mrz_line_1.length >= 20);
+  const mrz1 = record.ocr_data?.mrz_line_1 || record.mrz_info?.line1 || null;
+  const mrz2 = record.ocr_data?.mrz_line_2 || record.mrz_info?.line2 || null;
 
-  const mrz1 = record.ocr_data?.mrz_line_1 && record.ocr_data.mrz_line_1.length >= 40
-    ? record.ocr_data.mrz_line_1
-    : computedMrz.line1;
-
-  const mrz2 = record.ocr_data?.mrz_line_2 && record.ocr_data.mrz_line_2.length >= 40
-    ? record.ocr_data.mrz_line_2
-    : computedMrz.line2;
+  // Resolve document image from preview, backend artifact, or record url
+  const docImageSrc =
+    uploadedPreviewUrl ||
+    record.uploaded_document?.signed_url ||
+    record.uploaded_document?.url ||
+    (record.verification_id ? `/api/verifications/${record.verification_id}/image/passport` : null) ||
+    record.document_face_url ||
+    record.image_url ||
+    record.ocr_data?.document_image_url ||
+    null;
 
   return (
     <div className="bg-white rounded-[12px] border border-gray-100 p-5 shadow-2xs space-y-4">
@@ -220,12 +216,18 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
             transform: `scale(${zoomLevel / 100}) rotate(${rotation}deg)`,
           }}
         >
-          {uploadedPreviewUrl ? (
+          {docImageSrc ? (
             <div className="relative inline-block w-full">
               <img
-                src={uploadedPreviewUrl}
+                src={docImageSrc}
                 alt="Document Specimen"
+                crossOrigin="anonymous"
                 className="w-full h-auto max-h-[380px] object-contain rounded-lg shadow-lg border border-gray-700 mx-auto"
+                onError={(e) => {
+                  // If image fails to load, gracefully fall back
+                  console.warn('Document image failed to render, switching to fallback');
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
               />
               {/* Overlays on uploaded image */}
               {showOverlays && (
@@ -373,20 +375,26 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
               </div>
 
               {/* Machine Readable Zone (MRZ) Block */}
-              <div
-                className={`p-2 rounded font-mono text-[9px] tracking-[0.18em] leading-tight select-all border ${
-                  showOverlays
-                    ? 'bg-indigo-50/80 border-indigo-300 text-indigo-950 font-bold'
-                    : 'bg-gray-100 border-gray-300 text-gray-800'
-                }`}
-              >
-                <div className="truncate">
-                  {mrz1}
+              {isMrzDetected && mrz1 && mrz2 ? (
+                <div
+                  className={`p-2 rounded font-mono text-[9px] tracking-[0.18em] leading-tight select-all border ${
+                    showOverlays
+                      ? 'bg-indigo-50/80 border-indigo-300 text-indigo-950 font-bold'
+                      : 'bg-gray-100 border-gray-300 text-gray-800'
+                  }`}
+                >
+                  <div className="truncate">
+                    {mrz1}
+                  </div>
+                  <div className="truncate mt-0.5">
+                    {mrz2}
+                  </div>
                 </div>
-                <div className="truncate mt-0.5">
-                  {mrz2}
+              ) : (
+                <div className="p-2.5 rounded font-mono text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 text-center tracking-wider uppercase">
+                  MRZ NOT DETECTED
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -398,25 +406,27 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
           <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
             Standard
           </span>
-          <span className="font-bold text-gray-900">ICAO Doc 9303 (TD3)</span>
+          <span className="font-bold text-gray-900">
+            {record.mrz_info?.detected || Boolean(record.ocr_data?.mrz_line_1) ? 'ICAO Doc 9303 (TD3)' : 'Visual Inspection Zone'}
+          </span>
         </div>
         <div className="p-2 rounded-lg bg-[#F5F6F8]">
           <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
             Substrate Check
           </span>
-          <span className="font-bold text-emerald-600">UV/Visible Cleared</span>
+          <span className="font-bold text-amber-700">NOT ANALYZED (Digital Upload)</span>
         </div>
         <div className="p-2 rounded-lg bg-[#F5F6F8]">
           <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
-            Resolution
+            Image Mode
           </span>
-          <span className="font-bold text-gray-900">600 DPI Optical</span>
+          <span className="font-bold text-gray-900">Single-Spectrum RGB</span>
         </div>
         <div className="p-2 rounded-lg bg-[#F5F6F8]">
           <span className="text-[9px] text-gray-400 block uppercase font-sans font-bold">
-            Security Threads
+            Physical Security
           </span>
-          <span className="font-bold text-gray-900">Intaglio & Guilloche</span>
+          <span className="font-bold text-slate-500">UNAVAILABLE (Digital File)</span>
         </div>
       </div>
     </div>

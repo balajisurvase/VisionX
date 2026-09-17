@@ -11,12 +11,15 @@ load_dotenv(BASE_DIR.parent / ".env.local")
 # Server Config
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "production")
+
+# Allowed Frontend URLs for CORS
+FRONTEND_URL = os.getenv("FRONTEND_URL", "")
 
 # Google Gemini API Key (Server-Side Only - Never Exposed to Frontend)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-# Supabase Credentials
+# Supabase Credentials (Server-Side Only - Never Exposed to Frontend)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")

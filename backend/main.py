@@ -1,16 +1,15 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
-from fastapi import FastAPI, UploadFile, File, Form
+from typing import Optional, List
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from backend.config import UPLOAD_DIR
+from backend.config import UPLOAD_DIR, FRONTEND_URL, ENVIRONMENT
 from backend.models.schemas import SystemHealthStatus, AIModelStatus, ScreeningResult
-from backend.routes.verification import screen_document
 from backend.routes.auth import router as auth_router
-from backend.routes.verification import router as verification_router
+from backend.routes.verification import router as verification_router, screen_document
 from backend.routes.ocr import router as ocr_router
 from backend.routes.validation import router as validation_router
 from backend.routes.tampering import router as tampering_router
@@ -31,11 +30,30 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS middleware for cross-origin frontend requests
+# Production-safe CORS Configuration
+origins: List[str] = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+if FRONTEND_URL:
+    for url in FRONTEND_URL.split(","):
+        cleaned = url.strip().rstrip("/")
+        if cleaned and cleaned not in origins:
+            origins.append(cleaned)
+
+# If in development or no specific FRONTEND_URL provided, permit allow_origins=["*"] safely
+if ENVIRONMENT == "development" or not FRONTEND_URL:
+    allow_origins_list = ["*"]
+else:
+    allow_origins_list = origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allow_origins_list,
+    allow_credentials=True if allow_origins_list != ["*"] else False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -47,21 +65,27 @@ demo_docs_path = Path(__file__).resolve().parent.parent / "demo_documents"
 if demo_docs_path.exists():
     app.mount("/demo_documents", StaticFiles(directory=str(demo_docs_path)), name="demo_documents")
 
-# Register all modular routers under /api
-app.include_router(auth_router, prefix="/api")
-app.include_router(verification_router, prefix="/api")
-app.include_router(verification_router, prefix="/api/verify")
+# ------------------------------------------------------------------------------
+# API Routes (Single Clean Architecture - No duplicate routers or conflicting prefixes)
+# ------------------------------------------------------------------------------
 
+# Primary Verification Pipeline Endpoint
 @app.post("/api/verify", response_model=ScreeningResult, tags=["Automated Pipeline"])
-async def verify_alias(
+async def verify_endpoint(
     file: UploadFile = File(...),
     person_photo: Optional[UploadFile] = File(None),
     document_type: str = Form("Passport"),
-    officer_id: str = Form("officer001")
+    officer_id: str = Form("A001")
 ):
-    """Direct alias for /api/verify matching the frontend API_ENDPOINTS.verify call"""
+    """
+    Primary endpoint for full-pipeline identity and document screening.
+    Directly invokes the 8-stage forensic, OCR, MRZ, tampering, face verification, and risk engine.
+    """
     return await screen_document(file=file, person_photo=person_photo, document_type=document_type, officer_id=officer_id)
 
+# Modular Routers
+app.include_router(auth_router, prefix="/api")
+app.include_router(verification_router, prefix="/api")
 app.include_router(ocr_router, prefix="/api")
 app.include_router(validation_router, prefix="/api")
 app.include_router(tampering_router, prefix="/api")
@@ -74,7 +98,10 @@ app.include_router(audit_router, prefix="/api")
 app.include_router(demo_router, prefix="/api")
 app.include_router(gemini_router, prefix="/api")
 
-@app.get("/api/health", response_model=SystemHealthStatus)
+# ------------------------------------------------------------------------------
+# Diagnostic & Health Check
+# ------------------------------------------------------------------------------
+@app.get("/api/health", response_model=SystemHealthStatus, tags=["Diagnostics"])
 def health_check():
     """
     Diagnostic endpoint reporting system status and AI model readiness (Requirement 31).
@@ -89,7 +116,7 @@ def health_check():
         models.append(AIModelStatus(
             name="Google Gemini 2.5 Flash",
             status="API Key Missing",
-            notes="Set GEMINI_API_KEY in backend/.env or root .env for full multimodal vision"
+            notes="Set GEMINI_API_KEY in backend/.env or server environment for full multimodal vision"
         ))
 
     # 2. OpenCV Forensics & Face Cascade
@@ -112,7 +139,7 @@ def health_check():
     except Exception:
         models.append(AIModelStatus(name="Pillow", status="Unavailable"))
 
-    db_status = "Connected (Supabase PostgreSQL & Storage)" if is_supabase_configured() else "Local In-Memory Mode (Set SUPABASE_URL and key in .env)"
+    db_status = "Connected (Supabase PostgreSQL & Storage)" if is_supabase_configured() else "Local Mode"
 
     return SystemHealthStatus(
         status="healthy",

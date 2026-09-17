@@ -219,7 +219,9 @@ export const ForensicsElaViewer: React.FC<ForensicsElaViewerProps> = ({ record }
             <div className="grid grid-cols-2 gap-3 text-[11px] font-mono">
               <div className="p-3 bg-white rounded-lg border border-gray-200">
                 <span className="text-gray-400 block text-[9px]">OCR-B Font Standard</span>
-                <span className="font-bold text-emerald-600">Conforming (100% Match)</span>
+                <span className={`font-bold ${isTampered ? 'text-red-600' : 'text-emerald-600'}`}>
+                  {isTampered ? 'Non-Conforming (Font Discrepancy)' : 'Conforming (ICAO OCR-B)'}
+                </span>
               </div>
               <div className="p-3 bg-white rounded-lg border border-gray-200">
                 <span className="text-gray-400 block text-[9px]">Kerning Jitter Delta</span>

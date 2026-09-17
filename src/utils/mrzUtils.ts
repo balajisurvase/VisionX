@@ -39,7 +39,7 @@ export function calculateIcaoCheckDigit(input: string): string {
  * Converts any date string (YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, YYYYMMDD)
  * to ISO YYYY-MM-DD format
  */
-export function normalizeIsoDate(dateStr: string | null | undefined, defaultDate: string = '1998-03-14'): string {
+export function normalizeIsoDate(dateStr: string | null | undefined, defaultDate: string = ''): string {
   if (!dateStr || dateStr.trim() === '') return defaultDate;
 
   const cleaned = dateStr.trim();
@@ -84,8 +84,9 @@ export function normalizeIsoDate(dateStr: string | null | undefined, defaultDate
 /**
  * Converts ISO YYYY-MM-DD to MRZ 6-digit YYMMDD
  */
-export function isoToMrzDate(isoDateStr: string | null | undefined, fallback: string = '980314'): string {
+export function isoToMrzDate(isoDateStr: string | null | undefined, fallback: string = ''): string {
   const norm = normalizeIsoDate(isoDateStr);
+  if (!norm) return fallback;
   const parts = norm.split('-');
   if (parts.length === 3 && parts[0].length === 4) {
     const yy = parts[0].slice(2, 4);
@@ -102,7 +103,7 @@ export function isoToMrzDate(isoDateStr: string | null | undefined, fallback: st
  * @param isExpiry true if parsing expiry date, false for date of birth
  */
 export function mrzDateToIso(yymmdd: string, isExpiry: boolean = false): string {
-  if (!yymmdd || yymmdd.length !== 6) return '2028-04-14';
+  if (!yymmdd || yymmdd.length !== 6 || !/^\d{6}$/.test(yymmdd)) return '';
 
   const yy = parseInt(yymmdd.slice(0, 2), 10);
   const mm = yymmdd.slice(2, 4);
@@ -124,7 +125,8 @@ export function mrzDateToIso(yymmdd: string, isExpiry: boolean = false): string 
  * Formats a date for human passport visual inspection: "14 MAR 1998"
  */
 export function formatVisualDate(isoDateStr: string | null | undefined): string {
-  const norm = normalizeIsoDate(isoDateStr);
+  const norm = normalizeIsoDate(isoDateStr, '');
+  if (!norm) return 'NOT DETECTED';
   const parts = norm.split('-');
   if (parts.length !== 3) return norm;
 
@@ -136,7 +138,8 @@ export function formatVisualDate(isoDateStr: string | null | undefined): string 
 }
 
 /**
- * Generates compliant 2-line ICAO Doc 9303 TD3 Machine Readable Zone (MRZ)
+ * Generates compliant 2-line ICAO Doc 9303 TD3 Machine Readable Zone (MRZ) ONLY when real data exists.
+ * Returns empty lines if mandatory document fields are absent.
  */
 export function generateTd3Mrz(params: {
   documentType?: string;
@@ -149,6 +152,17 @@ export function generateTd3Mrz(params: {
   gender?: string;
   optionalData?: string;
 }): { line1: string; line2: string; docNoCheck: string; dobCheck: string; expCheck: string; compositeCheck: string } {
+  if (!params.documentNumber || params.documentNumber === 'NOT DETECTED' || !params.fullName || params.fullName === 'NOT DETECTED') {
+    return {
+      line1: '',
+      line2: '',
+      docNoCheck: '0',
+      dobCheck: '0',
+      expCheck: '0',
+      compositeCheck: '0',
+    };
+  }
+
   const docCode = (params.documentType?.startsWith('V') ? 'V<' : 'P<').padEnd(2, '<');
   const country = (params.countryCode || 'IND').slice(0, 3).padEnd(3, '<').toUpperCase();
 
@@ -166,24 +180,22 @@ export function generateTd3Mrz(params: {
   const line1 = `${docCode}${country}${cleanName}`.padEnd(44, '<').slice(0, 44);
 
   // Line 2 Components
-  const rawDocNo = (params.documentNumber || 'DEMOPPT001').replace(/[^A-Z0-9]/gi, '').toUpperCase();
+  const rawDocNo = (params.documentNumber || '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
   const docNoField = rawDocNo.padEnd(9, '<').slice(0, 9);
   const docNoCheck = calculateIcaoCheckDigit(docNoField);
 
-  const nat = (params.nationality || 'IND').slice(0, 3).padEnd(3, '<').toUpperCase();
+  const nat = (params.nationality || '').slice(0, 3).padEnd(3, '<').toUpperCase();
 
-  const dobYymmdd = isoToMrzDate(params.dateOfBirth, '980314');
+  const dobYymmdd = isoToMrzDate(params.dateOfBirth, '000101');
   const dobCheck = calculateIcaoCheckDigit(dobYymmdd);
 
   const sex = (params.gender?.toUpperCase().startsWith('F') ? 'F' : params.gender?.toUpperCase().startsWith('M') ? 'M' : 'X');
 
-  const expYymmdd = isoToMrzDate(params.dateOfExpiry, '310820');
+  const expYymmdd = isoToMrzDate(params.dateOfExpiry, '300101');
   const expCheck = calculateIcaoCheckDigit(expYymmdd);
 
   const optData = (params.optionalData || '').replace(/[^A-Z0-9]/gi, '').padEnd(14, '<').slice(0, 14);
-  const optCheck = calculateIcaoCheckDigit(optData);
 
-  // Composite check digit calculated over: docNo + docNoCheck + dob + dobCheck + exp + expCheck + optData (+ optCheck if present)
   const compositeString = `${docNoField}${docNoCheck}${dobYymmdd}${dobCheck}${expYymmdd}${expCheck}${optData}`;
   const compositeCheck = calculateIcaoCheckDigit(compositeString);
 
@@ -222,16 +234,34 @@ export function evaluateRealTimeExpiry(
   expiryDateStr: string | null | undefined,
   referenceDate: Date = new Date()
 ): ExpiryEvaluation {
-  const normExpiry = normalizeIsoDate(expiryDateStr, '2031-08-20');
-  const visualDate = formatVisualDate(normExpiry);
-
   const refNow = new Date(referenceDate);
   const refYear = refNow.getFullYear();
   const refMonth = refNow.getMonth();
   const refDay = refNow.getDate();
 
-  // Create date at midnight of today
-  const todayMidnight = new Date(refYear, refMonth, refDay, 0, 0, 0, 0);
+  const currentReferenceIso = refNow.toISOString().split('T')[0];
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const currentReferenceFormatted = `${refDay.toString().padStart(2, '0')} ${months[refMonth]} ${refYear}`;
+
+  const normExpiry = normalizeIsoDate(expiryDateStr, '');
+  if (!normExpiry || normExpiry === 'NOT DETECTED') {
+    return {
+      isExpired: false,
+      isExpiringSoon: false,
+      expiryIso: '',
+      visualDate: 'NOT DETECTED',
+      diffDays: 0,
+      diffMonths: 0,
+      relativeTimeText: 'TIMELINE NOT AVAILABLE',
+      urgency: 'ACTIVE',
+      statusLabel: 'NOT DETECTED',
+      detailedNotice: 'Date of expiry was not detected from current uploaded document.',
+      currentReferenceIso,
+      currentReferenceFormatted,
+    };
+  }
+
+  const visualDate = formatVisualDate(normExpiry);
 
   // Parse expiry date components
   const [expYear, expMonth, expDay] = normExpiry.split('-').map(Number);
@@ -284,10 +314,6 @@ export function evaluateRealTimeExpiry(
     detailedNotice = `Notice: Document expires in ${diffDays} days (${diffMonths} months). May fail 6-month validity rules for foreign immigration.`;
   }
 
-  const currentReferenceIso = refNow.toISOString().split('T')[0];
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  const currentReferenceFormatted = `${refDay.toString().padStart(2, '0')} ${months[refMonth]} ${refYear}`;
-
   return {
     isExpired,
     isExpiringSoon,
@@ -301,5 +327,122 @@ export function evaluateRealTimeExpiry(
     detailedNotice,
     currentReferenceIso,
     currentReferenceFormatted,
+  };
+}
+
+export interface ParsedTd3Mrz {
+  validFormat: boolean;
+  documentType: string;
+  issuingCountry: string;
+  surname: string;
+  givenNames: string;
+  fullName: string;
+  documentNumber: string;
+  nationality: string;
+  dateOfBirthIso: string;
+  dateOfExpiryIso: string;
+  gender: string;
+  optionalData: string;
+  checkDigits: {
+    docNumber: { value: string; expected: string; valid: boolean };
+    dob: { value: string; expected: string; valid: boolean };
+    expiry: { value: string; expected: string; valid: boolean };
+    composite: { value: string; expected: string; valid: boolean };
+  };
+  allChecksumsValid: boolean;
+  line1: string;
+  line2: string;
+}
+
+/**
+ * Parses and verifies 2-line ICAO Doc 9303 TD3 Machine Readable Zone (MRZ).
+ * Supports standard 44-character lines. Handles optical noise by normalizing characters.
+ */
+export function parseTd3Mrz(line1Raw: string, line2Raw: string): ParsedTd3Mrz | null {
+  if (!line1Raw || !line2Raw) return null;
+
+  // Clean and normalize strings (remove spaces, replace non-MRZ chars)
+  const cleanLine = (str: string) =>
+    str.trim().toUpperCase().replace(/[^A-Z0-9<]/g, '<');
+
+  let l1 = cleanLine(line1Raw);
+  let l2 = cleanLine(line2Raw);
+
+  // If length is slightly off, pad with '<' up to 44
+  if (l1.length < 44) l1 = l1.padEnd(44, '<');
+  if (l2.length < 44) l2 = l2.padEnd(44, '<');
+  l1 = l1.slice(0, 44);
+  l2 = l2.slice(0, 44);
+
+  // Validate basic TD3 structure
+  const docType = l1.slice(0, 2).replace(/</g, '');
+  const issuingCountry = l1.slice(2, 5).replace(/</g, '');
+  const nameSection = l1.slice(5);
+
+  const nameParts = nameSection.split('<<');
+  const surname = (nameParts[0] || '').replace(/</g, ' ').trim();
+  const givenNames = (nameParts.slice(1).join(' ') || '').replace(/</g, ' ').trim();
+  const fullName = surname && givenNames ? `${givenNames} ${surname}` : surname || givenNames;
+
+  // Line 2 parsing
+  const docNumField = l2.slice(0, 9);
+  const docNumCheck = l2.charAt(9);
+  const rawDocNumber = docNumField.replace(/</g, '').trim();
+
+  const nationality = l2.slice(10, 13).replace(/</g, '').trim();
+
+  const dobYymmdd = l2.slice(13, 19);
+  const dobCheck = l2.charAt(19);
+  const dateOfBirthIso = mrzDateToIso(dobYymmdd, false);
+
+  const sexChar = l2.charAt(20);
+  const gender = sexChar === 'M' ? 'Male' : sexChar === 'F' ? 'Female' : 'Unspecified';
+
+  const expYymmdd = l2.slice(21, 27);
+  const expCheck = l2.charAt(27);
+  const dateOfExpiryIso = mrzDateToIso(expYymmdd, true);
+
+  const optionalData = l2.slice(28, 42).replace(/</g, '').trim();
+  const compositeCheck = l2.charAt(43);
+
+  // Modulo-10 7-3-1 Checksum verifications
+  const expectedDocNumCheck = calculateIcaoCheckDigit(docNumField);
+  const isDocNumValid = docNumCheck === expectedDocNumCheck;
+
+  const expectedDobCheck = calculateIcaoCheckDigit(dobYymmdd);
+  const isDobValid = dobCheck === expectedDobCheck;
+
+  const expectedExpCheck = calculateIcaoCheckDigit(expYymmdd);
+  const isExpValid = expCheck === expectedExpCheck;
+
+  // Composite check covers positions 0-9, 13-19, 21-42
+  const compositeInput = `${docNumField}${docNumCheck}${dobYymmdd}${dobCheck}${expYymmdd}${expCheck}${l2.slice(28, 43)}`;
+  const expectedCompositeCheck = calculateIcaoCheckDigit(compositeInput);
+  const isCompositeValid = compositeCheck === expectedCompositeCheck;
+
+  const allChecksumsValid = isDocNumValid && isDobValid && isExpValid && isCompositeValid;
+
+  return {
+    validFormat: true,
+    documentType: docType || 'P',
+    issuingCountry,
+    surname,
+    givenNames,
+    fullName,
+    documentNumber: rawDocNumber,
+    nationality,
+    dateOfBirthIso,
+    dateOfExpiryIso,
+    gender,
+    optionalData,
+    checkDigits: {
+      docNumber: { value: docNumCheck, expected: expectedDocNumCheck, valid: isDocNumValid },
+      dob: { value: dobCheck, expected: expectedDobCheck, valid: isDobValid },
+      expiry: { value: expCheck, expected: expectedExpCheck, valid: isExpValid },
+      composite: { value: compositeCheck, expected: expectedCompositeCheck, valid: isCompositeValid },
+    },
+    allChecksumsValid,
+    line1: l1,
+    line2: l2,
   };
 }
