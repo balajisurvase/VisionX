@@ -66,7 +66,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   return (
     <div
       style={{ fontFamily: "'Times New Roman', Times, serif" }}
-      className="w-screen h-screen min-h-screen bg-[#EAF2FF] text-[#10233F] flex flex-col md:flex-row overflow-x-hidden overflow-y-auto md:overflow-hidden select-none"
+      className="w-full min-h-screen bg-[#EAF2FF] text-[#10233F] flex flex-col md:flex-row overflow-x-hidden overflow-y-auto select-none"
     >
       {/* LEFT SECTION (~45% width on desktop) */}
       <div className="w-full md:w-[45%] bg-[#102A56] text-white p-8 md:p-12 lg:p-16 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#C9DCF8]">
