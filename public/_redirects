@@ -1,5 +1,10 @@
-/api/verify                /.netlify/functions/verify               200
-/api/dashboard             /.netlify/functions/dashboard            200
-/api/verification/history  /.netlify/functions/verification-history 200
-/api/*                     /.netlify/functions/:splat               200
-/*                         /index.html                              200
+/api/health                               /.netlify/functions/health               200!
+/api/verifications/:id/image/:type         /.netlify/functions/portrait             200!
+/api/verifications/:id/image/portrait      /.netlify/functions/portrait             200!
+/api/verifications/*                       /.netlify/functions/portrait             200!
+/api/verification/screen                   /.netlify/functions/verify               200!
+/api/verify                                /.netlify/functions/verify               200!
+/api/dashboard                             /.netlify/functions/dashboard            200!
+/api/verification/history                  /.netlify/functions/verification-history 200!
+/api/history                               /.netlify/functions/verification-history 200!
+/*                                         /index.html                              200

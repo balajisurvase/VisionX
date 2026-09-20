@@ -4,26 +4,61 @@
 
 [functions]
   directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/verifications/:id/image/:type"
+  to = "/.netlify/functions/portrait"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/verifications/:id/image/portrait"
+  to = "/.netlify/functions/portrait"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/verifications/*"
+  to = "/.netlify/functions/portrait"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/verification/screen"
+  to = "/.netlify/functions/verify"
+  status = 200
+  force = true
 
 [[redirects]]
   from = "/api/verify"
   to = "/.netlify/functions/verify"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/dashboard"
   to = "/.netlify/functions/dashboard"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/verification/history"
   to = "/.netlify/functions/verification-history"
   status = 200
+  force = true
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/history"
+  to = "/.netlify/functions/verification-history"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/*"

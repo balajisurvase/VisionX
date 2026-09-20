@@ -344,29 +344,41 @@ export interface ParsedTd3Mrz {
   gender: string;
   optionalData: string;
   checkDigits: {
-    docNumber: { value: string; expected: string; valid: boolean };
-    dob: { value: string; expected: string; valid: boolean };
-    expiry: { value: string; expected: string; valid: boolean };
-    composite: { value: string; expected: string; valid: boolean };
+    docNumber: { value: string; expected: string; valid: boolean; reason?: string };
+    dob: { value: string; expected: string; valid: boolean; reason?: string };
+    expiry: { value: string; expected: string; valid: boolean; reason?: string };
+    composite: { value: string; expected: string; valid: boolean; reason?: string };
   };
   allChecksumsValid: boolean;
+  status: 'PASSED' | 'FAILED';
+  reason: string;
+  failureReasons: string[];
   line1: string;
   line2: string;
 }
 
 /**
  * Parses and verifies 2-line ICAO Doc 9303 TD3 Machine Readable Zone (MRZ).
- * Supports standard 44-character lines. Handles optical noise by normalizing characters.
+ * Supports standard 44-character lines. Performs strict Modulo-10 7-3-1 check digit validation.
  */
 export function parseTd3Mrz(line1Raw: string, line2Raw: string): ParsedTd3Mrz | null {
   if (!line1Raw || !line2Raw) return null;
+
+  const failureReasons: string[] = [];
 
   // Clean and normalize strings (remove spaces, replace non-MRZ chars)
   const cleanLine = (str: string) =>
     str.trim().toUpperCase().replace(/[^A-Z0-9<]/g, '<');
 
+  const rawL1 = line1Raw.trim().toUpperCase();
+  const rawL2 = line2Raw.trim().toUpperCase();
+
   let l1 = cleanLine(line1Raw);
   let l2 = cleanLine(line2Raw);
+
+  if (rawL1.length !== 44 || rawL2.length !== 44) {
+    failureReasons.push(`MRZ line length mismatch: Line 1 has ${rawL1.length} chars, Line 2 has ${rawL2.length} chars (ICAO TD3 requires 44 characters per line).`);
+  }
 
   // If length is slightly off, pad with '<' up to 44
   if (l1.length < 44) l1 = l1.padEnd(44, '<');
@@ -408,17 +420,29 @@ export function parseTd3Mrz(line1Raw: string, line2Raw: string): ParsedTd3Mrz | 
   // Modulo-10 7-3-1 Checksum verifications
   const expectedDocNumCheck = calculateIcaoCheckDigit(docNumField);
   const isDocNumValid = docNumCheck === expectedDocNumCheck;
+  if (!isDocNumValid) {
+    failureReasons.push(`Passport number check digit mismatch: expected '${expectedDocNumCheck}', found '${docNumCheck}'`);
+  }
 
   const expectedDobCheck = calculateIcaoCheckDigit(dobYymmdd);
   const isDobValid = dobCheck === expectedDobCheck;
+  if (!isDobValid) {
+    failureReasons.push(`Date of birth check digit mismatch: expected '${expectedDobCheck}', found '${dobCheck}'`);
+  }
 
   const expectedExpCheck = calculateIcaoCheckDigit(expYymmdd);
   const isExpValid = expCheck === expectedExpCheck;
+  if (!isExpValid) {
+    failureReasons.push(`Date of expiry check digit mismatch: expected '${expectedExpCheck}', found '${expCheck}'`);
+  }
 
-  // Composite check covers positions 0-9, 13-19, 21-42
+  // Composite check covers positions 0-9, 13-19, 21-42 in line 2
   const compositeInput = `${docNumField}${docNumCheck}${dobYymmdd}${dobCheck}${expYymmdd}${expCheck}${l2.slice(28, 43)}`;
   const expectedCompositeCheck = calculateIcaoCheckDigit(compositeInput);
   const isCompositeValid = compositeCheck === expectedCompositeCheck;
+  if (!isCompositeValid) {
+    failureReasons.push(`Composite check digit mismatch: expected '${expectedCompositeCheck}', found '${compositeCheck}'`);
+  }
 
   const allChecksumsValid = isDocNumValid && isDobValid && isExpValid && isCompositeValid;
 
@@ -436,12 +460,35 @@ export function parseTd3Mrz(line1Raw: string, line2Raw: string): ParsedTd3Mrz | 
     gender,
     optionalData,
     checkDigits: {
-      docNumber: { value: docNumCheck, expected: expectedDocNumCheck, valid: isDocNumValid },
-      dob: { value: dobCheck, expected: expectedDobCheck, valid: isDobValid },
-      expiry: { value: expCheck, expected: expectedExpCheck, valid: isExpValid },
-      composite: { value: compositeCheck, expected: expectedCompositeCheck, valid: isCompositeValid },
+      docNumber: {
+        value: docNumCheck,
+        expected: expectedDocNumCheck,
+        valid: isDocNumValid,
+        reason: isDocNumValid ? undefined : `Expected ${expectedDocNumCheck}, found ${docNumCheck}`,
+      },
+      dob: {
+        value: dobCheck,
+        expected: expectedDobCheck,
+        valid: isDobValid,
+        reason: isDobValid ? undefined : `Expected ${expectedDobCheck}, found ${dobCheck}`,
+      },
+      expiry: {
+        value: expCheck,
+        expected: expectedExpCheck,
+        valid: isExpValid,
+        reason: isExpValid ? undefined : `Expected ${expectedExpCheck}, found ${expCheck}`,
+      },
+      composite: {
+        value: compositeCheck,
+        expected: expectedCompositeCheck,
+        valid: isCompositeValid,
+        reason: isCompositeValid ? undefined : `Expected ${expectedCompositeCheck}, found ${compositeCheck}`,
+      },
     },
     allChecksumsValid,
+    status: allChecksumsValid ? 'PASSED' : 'FAILED',
+    reason: failureReasons.length > 0 ? failureReasons[0] : 'All ICAO TD3 checksums valid',
+    failureReasons,
     line1: l1,
     line2: l2,
   };

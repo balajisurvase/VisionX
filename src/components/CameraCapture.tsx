@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Camera, RefreshCw, AlertCircle, Check, X, ShieldAlert, FlipHorizontal } from 'lucide-react';
+import { Camera, RefreshCw, AlertCircle, Check, X, ShieldAlert, FlipHorizontal, Upload } from 'lucide-react';
 
 interface CameraCaptureProps {
   onCapture: (blob: Blob, dataUrl: string) => void;
@@ -24,6 +24,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -57,14 +58,20 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     try {
       const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: facing,
+          facingMode: { ideal: facing },
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
         audio: false,
       };
 
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
       streamRef.current = stream;
 
       if (videoRef.current) {
@@ -91,6 +98,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
       }
     }
   }, [facingMode, stopStream]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setPreviewDataUrl(dataUrl);
+      onCapture(file, dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (autoStart && !capturedPreviewUrl) {
@@ -205,14 +225,31 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
             <div>
               <p className="text-xs font-semibold text-slate-200">{cameraError}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => startStream()}
-              className="px-3 py-1.5 rounded text-xs font-bold bg-[#0B3D91] hover:bg-[#082d6c] text-white cursor-pointer inline-flex items-center gap-1.5"
-            >
-              <RefreshCw className="w-3 h-3" />
-              <span>Try Again</span>
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => startStream()}
+                className="px-3 py-1.5 rounded text-xs font-bold bg-[#0B3D91] hover:bg-[#082d6c] text-white cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Try Again</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3 py-1.5 rounded text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Upload className="w-3 h-3" />
+                <span>Upload Photo</span>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
           </div>
         ) : (
           // Live Video Stream

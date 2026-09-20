@@ -232,7 +232,17 @@ export const ForensicReportModal: React.FC<ForensicReportModalProps> = ({ record
                       <User className="w-8 h-8 text-slate-400" />
                     )}
                   </div>
-                  <span className="text-[9px] font-bold text-emerald-600 mt-1 block">96.8% Match</span>
+                  {(() => {
+                    const rawScore = typeof record.face_details?.match_score === 'number' ? record.face_details.match_score : (typeof (record as any).face_match_score === 'number' ? (record as any).face_match_score : null);
+                    const faceStatus = (record as any).face_verification_status || (record.face_details?.verdict === 'FACE MATCH' ? 'MATCH' : (record.face_details?.verdict === 'FACE MISMATCH' ? 'MISMATCH' : 'NOT_PERFORMED'));
+                    if (faceStatus === 'MATCH') {
+                      return <span className="text-[9px] font-bold text-emerald-600 mt-1 block">{rawScore !== null ? `${rawScore}% Match` : 'Match Confirmed'}</span>;
+                    }
+                    if (faceStatus === 'MISMATCH') {
+                      return <span className="text-[9px] font-bold text-red-600 mt-1 block">{rawScore !== null ? `${rawScore}% Mismatch` : 'Mismatch'}</span>;
+                    }
+                    return <span className="text-[9px] font-bold text-slate-500 mt-1 block">Not Performed</span>;
+                  })()}
                 </div>
               </div>
             </div>
@@ -245,32 +255,51 @@ export const ForensicReportModal: React.FC<ForensicReportModalProps> = ({ record
               3. 15-Stage Document Forensic Analysis Audit Matrix
             </h4>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs font-mono">
-              {[
-                { name: '1. File Received', status: 'PASS' },
-                { name: '2. Image Read', status: 'PASS' },
-                { name: '3. Doc Detection', status: 'PASS' },
-                { name: '4. Preprocessing', status: 'PASS' },
-                { name: '5. OCR Extraction', status: 'PASS' },
-                { name: '6. MRZ Detection', status: 'PASS' },
-                { name: '7. MRZ Checksum', status: 'PASS' },
-                { name: '8. Field Extract', status: 'PASS' },
-                { name: '9. Portrait ROI', status: 'PASS' },
-                { name: '10. Structure Check', status: 'PASS' },
-                { name: '11. Tamper Forensic', status: 'PASS' },
-                { name: '12. Visible ↔ MRZ', status: 'PASS' },
-                { name: '13. Date Validity', status: 'PASS' },
-                { name: '14. Risk Calculate', status: 'PASS' },
-                { name: '15. Final Verdict', status: 'AUTHENTIC' },
-              ].map((st, i) => (
-                <div key={i} className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-600 truncate">{st.name}</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
-                    {st.status}
-                  </span>
+            {(() => {
+              const hasDocNum = Boolean(
+                record.document_number &&
+                record.document_number !== 'NOT DETECTED' &&
+                record.document_number !== 'NOT_DETECTED' &&
+                record.document_number !== 'N/A'
+              );
+              const isMrzDetected = Boolean(record.mrz_info?.detected || record.ocr_data?.mrz_line_1);
+              const isMrzValid = Boolean(record.mrz_info?.checksum_valid);
+              const isPortraitDetected = Boolean(record.uploaded_portrait?.detected || record.face_details?.face_detected);
+              const isTamperingAnomaly = (record.tampering_details?.tampering_probability ?? 0) > 30 || record.tampering_status === 'FAILED';
+              const isExpired = record.verification_status === 'EXPIRED';
+              const finalVerdict = record.verification_status === 'VERIFIED' ? 'AUTHENTIC' : (record.verification_status === 'EXPIRED' ? 'EXPIRED' : 'REJECTED');
+
+              const stages = [
+                { name: '1. File Received', status: 'PASS', isPass: true },
+                { name: '2. Image Read', status: 'PASS', isPass: true },
+                { name: '3. Doc Detection', status: 'PASS', isPass: true },
+                { name: '4. Preprocessing', status: 'PASS', isPass: true },
+                { name: '5. OCR Extraction', status: hasDocNum ? 'PASS' : 'FAIL', isPass: hasDocNum },
+                { name: '6. MRZ Detection', status: isMrzDetected ? 'PASS' : (hasDocNum ? 'NOT DETECTED' : 'FAIL'), isPass: isMrzDetected },
+                { name: '7. MRZ Checksum', status: isMrzValid ? 'PASS' : (isMrzDetected ? 'FAIL' : 'NOT_PERF'), isPass: isMrzValid },
+                { name: '8. Field Extract', status: hasDocNum ? 'PASS' : 'FAIL', isPass: hasDocNum },
+                { name: '9. Portrait ROI', status: isPortraitDetected ? 'PASS' : 'NOT DETECTED', isPass: isPortraitDetected },
+                { name: '10. Structure Check', status: hasDocNum ? 'PASS' : 'FAIL', isPass: hasDocNum },
+                { name: '11. Tamper Forensic', status: !hasDocNum ? 'NOT_PERF' : (isTamperingAnomaly ? 'ANOMALY' : 'PASS'), isPass: !isTamperingAnomaly && hasDocNum },
+                { name: '12. Visible ↔ MRZ', status: !hasDocNum ? 'NOT_PERF' : (isMrzDetected ? 'PASS' : 'NOT_PERF'), isPass: hasDocNum && isMrzDetected },
+                { name: '13. Date Validity', status: isExpired ? 'EXPIRED' : (hasDocNum ? 'PASS' : 'NOT_PERF'), isPass: !isExpired && hasDocNum },
+                { name: '14. Risk Calculate', status: 'PASS', isPass: true },
+                { name: '15. Final Verdict', status: finalVerdict, isPass: finalVerdict === 'AUTHENTIC' },
+              ];
+
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs font-mono">
+                  {stages.map((st, i) => (
+                    <div key={i} className="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+                      <span className="text-[10px] text-slate-600 truncate">{st.name}</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${st.isPass ? 'text-emerald-700 bg-emerald-100' : (st.status === 'NOT_PERF' || st.status === 'NOT DETECTED' ? 'text-slate-600 bg-slate-200' : 'text-red-700 bg-red-100')}`}>
+                        {st.status}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
 
           {/* Section 3: Forensic Tampering & MRZ Zone */}

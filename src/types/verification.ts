@@ -32,9 +32,9 @@ export interface VisibleVsMrzField {
   status: 'MATCH' | 'MISMATCH' | 'NOT AVAILABLE';
 }
 
-export type CheckStatus = 'PASSED' | 'FAILED' | 'WARNING' | 'SUSPICIOUS';
+export type CheckStatus = 'PASSED' | 'FAILED' | 'WARNING' | 'SUSPICIOUS' | 'NOT_PERFORMED' | 'EXPIRED';
 
-export type DocStatus = 'VALID' | 'EXPIRED' | 'NOT FOUND' | 'REVOKED' | 'TAMPERED';
+export type DocStatus = 'VALID' | 'EXPIRED' | 'NOT FOUND' | 'REVOKED' | 'TAMPERED' | 'INVALID' | 'NOT_PERFORMED';
 
 export interface BoundingBox {
   x: number;
@@ -170,12 +170,12 @@ export interface ValidationDetails {
 }
 
 export interface TamperingDetails {
-  photo_replacement_status: 'NO_ISSUE' | 'SUSPICIOUS' | 'DETECTED';
-  text_manipulation_status: 'NO_ISSUE' | 'SUSPICIOUS' | 'DETECTED';
+  photo_replacement_status: 'NO_ISSUE' | 'SUSPICIOUS' | 'DETECTED' | 'ANOMALY';
+  text_manipulation_status: 'NO_ISSUE' | 'SUSPICIOUS' | 'DETECTED' | 'ANOMALY';
   stamp_analysis_status: 'NO_ISSUE' | 'SUSPICIOUS' | 'INCONSISTENT';
   metadata_analysis_status: 'NO_ISSUE' | 'MODIFIED' | 'EXIF_ANOMALY';
   tampering_probability: number; // 0 to 100%
-  verdict: 'DOCUMENT APPEARS AUTHENTIC' | 'POTENTIAL TAMPERING' | 'TAMPERING DETECTED';
+  verdict: 'DOCUMENT APPEARS AUTHENTIC' | 'POTENTIAL TAMPERING' | 'TAMPERING DETECTED' | 'TAMPERING ANOMALY DETECTED';
   detected_anomalies: string[];
 }
 
@@ -185,7 +185,7 @@ export interface FaceVerificationDetails {
   match_score: number; // 0 to 100%
   face_detected: boolean;
   liveness_passed: boolean;
-  verdict: 'FACE MATCH' | 'FACE MISMATCH';
+  verdict: 'FACE MATCH' | 'FACE MISMATCH' | 'NOT PERFORMED';
   confidence_metric: string;
 }
 

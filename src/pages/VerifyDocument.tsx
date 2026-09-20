@@ -1027,37 +1027,132 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                   </span>
                 </div>
 
-                <div className="space-y-3 text-[15px]">
-                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="font-bold text-[#10233F]">OCR Extraction</span>
-                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
-                  </div>
+                {(() => {
+                  const hasDocNum = Boolean(
+                    currentResult.document_number &&
+                    currentResult.document_number !== 'NOT DETECTED' &&
+                    currentResult.document_number !== 'NOT_DETECTED' &&
+                    currentResult.document_number !== 'N/A'
+                  );
 
-                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="font-bold text-[#10233F]">MRZ Validation</span>
-                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
-                  </div>
+                  // 1. OCR Extraction
+                  const ocrText = hasDocNum ? 'COMPLETED' : 'FAILED';
+                  const ocrColor = hasDocNum ? 'text-[#15803D]' : 'text-[#DC2626]';
 
-                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="font-bold text-[#10233F]">Document Validation</span>
-                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
-                  </div>
+                  // 2. MRZ Validation
+                  const isMrzDetected = Boolean(currentResult.mrz_info?.detected || currentResult.ocr_data?.mrz_line_1);
+                  const isMrzChecksum = Boolean(currentResult.mrz_info?.checksum_valid);
+                  let mrzText = 'NOT DETECTED';
+                  let mrzColor = 'text-[#64748B]';
+                  if (isMrzDetected && isMrzChecksum) {
+                    mrzText = 'COMPLETED';
+                    mrzColor = 'text-[#15803D]';
+                  } else if (isMrzDetected && !isMrzChecksum) {
+                    mrzText = 'FAILED';
+                    mrzColor = 'text-[#DC2626]';
+                  } else if (!hasDocNum) {
+                    mrzText = 'FAILED';
+                    mrzColor = 'text-[#DC2626]';
+                  } else {
+                    mrzText = 'NOT DETECTED (VIZ RELIED UPON)';
+                    mrzColor = 'text-[#D97706]';
+                  }
 
-                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="font-bold text-[#10233F]">Tampering Analysis</span>
-                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
-                  </div>
+                  // 3. Document Validation
+                  let docValText = 'NOT PERFORMED';
+                  let docValColor = 'text-[#64748B]';
+                  if (!hasDocNum) {
+                    docValText = 'NOT PERFORMED';
+                    docValColor = 'text-[#64748B]';
+                  } else if (currentResult.verification_status === 'EXPIRED') {
+                    docValText = 'EXPIRED';
+                    docValColor = 'text-[#DC2626]';
+                  } else if (currentResult.verification_status === 'VERIFIED' || currentResult.validation_status === 'PASSED') {
+                    docValText = 'COMPLETED';
+                    docValColor = 'text-[#15803D]';
+                  } else {
+                    docValText = 'FAILED';
+                    docValColor = 'text-[#DC2626]';
+                  }
 
-                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="font-bold text-[#10233F]">Face Verification</span>
-                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
-                  </div>
+                  // 4. Tampering Analysis
+                  let tamperText = 'NOT PERFORMED';
+                  let tamperColor = 'text-[#64748B]';
+                  if (!hasDocNum) {
+                    tamperText = 'NOT PERFORMED';
+                    tamperColor = 'text-[#64748B]';
+                  } else if (currentResult.tampering_status === 'PASSED' || (currentResult.tampering_details?.tampering_probability ?? 0) === 0) {
+                    tamperText = 'COMPLETED';
+                    tamperColor = 'text-[#15803D]';
+                  } else {
+                    tamperText = 'ANOMALY DETECTED';
+                    tamperColor = 'text-[#DC2626]';
+                  }
 
-                  <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="font-bold text-[#10233F]">Database Match</span>
-                    <span className="font-bold text-[#15803D] uppercase">COMPLETED</span>
-                  </div>
-                </div>
+                  // 5. Face Verification
+                  let faceText = 'NOT PERFORMED';
+                  let faceColor = 'text-[#64748B]';
+                  const faceStatus = currentResult.face_verification_status || (currentResult.face_details?.verdict === 'FACE MATCH' ? 'MATCH' : (currentResult.face_details?.verdict === 'FACE MISMATCH' ? 'MISMATCH' : 'NOT_PERFORMED'));
+                  if (!hasDocNum || faceStatus === 'NOT_PERFORMED') {
+                    faceText = 'NOT PERFORMED';
+                    faceColor = 'text-[#64748B]';
+                  } else if (faceStatus === 'MATCH' || currentResult.face_match_status === 'PASSED') {
+                    faceText = 'COMPLETED';
+                    faceColor = 'text-[#15803D]';
+                  } else if (faceStatus === 'MISMATCH' || currentResult.face_match_status === 'FAILED') {
+                    faceText = 'MISMATCH';
+                    faceColor = 'text-[#DC2626]';
+                  }
+
+                  // 6. Database Match
+                  let dbText = 'NOT PERFORMED';
+                  let dbColor = 'text-[#64748B]';
+                  const dbMatch = currentResult.database_match?.match_status || (currentResult.registered_identity_info?.found ? 'EXACT_MATCH' : (hasDocNum ? 'NO_MATCH' : 'NOT_PERFORMED'));
+                  if (!hasDocNum || dbMatch === 'NOT_PERFORMED') {
+                    dbText = 'NOT PERFORMED';
+                    dbColor = 'text-[#64748B]';
+                  } else if (dbMatch === 'EXACT_MATCH') {
+                    dbText = 'COMPLETED';
+                    dbColor = 'text-[#15803D]';
+                  } else {
+                    dbText = 'NO MATCH';
+                    dbColor = 'text-[#DC2626]';
+                  }
+
+                  return (
+                    <div className="space-y-3 text-[15px]">
+                      <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                        <span className="font-bold text-[#10233F]">OCR Extraction</span>
+                        <span className={`font-bold uppercase ${ocrColor}`}>{ocrText}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                        <span className="font-bold text-[#10233F]">MRZ Validation</span>
+                        <span className={`font-bold uppercase ${mrzColor}`}>{mrzText}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                        <span className="font-bold text-[#10233F]">Document Validation</span>
+                        <span className={`font-bold uppercase ${docValColor}`}>{docValText}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                        <span className="font-bold text-[#10233F]">Tampering Analysis</span>
+                        <span className={`font-bold uppercase ${tamperColor}`}>{tamperText}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                        <span className="font-bold text-[#10233F]">Face Verification</span>
+                        <span className={`font-bold uppercase ${faceColor}`}>{faceText}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                        <span className="font-bold text-[#10233F]">Database Match</span>
+                        <span className={`font-bold uppercase ${dbColor}`}>{dbText}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

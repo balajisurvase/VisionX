@@ -18,6 +18,10 @@ import {
   normalize_document_number,
   findRegisteredDocumentAndPerson,
   fetchRegisteredPersonsFromSupabase,
+  getClient,
+  createSignedStorageUrl,
+  getPortraitSignedUrl,
+  getRegisteredBiometricReference,
 } from './supabaseService';
 import {
   parseTd3Mrz,
@@ -25,7 +29,7 @@ import {
   normalizeIsoDate,
   calculateIcaoCheckDigit,
 } from './src/utils/mrzUtils';
-import { executeVerificationPipeline } from './verificationEngine';
+import { executeVerificationPipeline, portraitMemoryCache } from './verificationEngine';
 
 dotenv.config();
 
@@ -46,31 +50,141 @@ if (!fs.existsSync(biometricsDir)) fs.mkdirSync(biometricsDir, { recursive: true
 app.use('/uploads', express.static(uploadsDir));
 
 // Image retrieval endpoints
-app.get('/api/verifications/:id/image/:type', (req, res) => {
-  const { id, type } = req.params;
-  let filename = 'uploaded-passport.jpg';
-  if (type === 'portrait' || type === 'face') filename = 'uploaded-passport-portrait.jpg';
-  if (type === 'mrz') filename = 'mrz-crop.jpg';
-  if (type === 'person' || type === 'selfie' || type === 'biometric') filename = 'uploaded-person.jpg';
+app.get('/api/verifications/:id/image/:type?', async (req, res) => {
+  const { id } = req.params;
+  const type = (req.params.type || 'portrait').toLowerCase();
 
+  let filename = 'uploaded-passport.jpg';
+  let mediaTypeCol = 'document';
+  if (type === 'portrait' || type === 'face') {
+    filename = 'uploaded-passport-portrait.jpg';
+    mediaTypeCol = 'portrait';
+  } else if (type === 'mrz') {
+    filename = 'mrz-crop.jpg';
+    mediaTypeCol = 'mrz_crop';
+  } else if (type === 'person' || type === 'selfie' || type === 'biometric') {
+    filename = 'uploaded-person.jpg';
+    mediaTypeCol = 'biometric';
+  }
+
+  // 1. Check local file on disk
   const filePath = path.join(verificationsDir, id, filename);
   if (fs.existsSync(filePath)) {
+    if (req.query.json === '1') {
+      return res.json({ success: true, imageUrl: `/api/verifications/${id}/image/${type}?raw=1` });
+    }
     return res.sendFile(filePath);
   }
-  return res.status(404).send('Image artifact not found');
+
+  // Check alternative filename on disk
+  if (type === 'portrait' || type === 'face') {
+    const altPath = path.join(verificationsDir, id, 'passport-portrait.jpg');
+    if (fs.existsSync(altPath)) {
+      if (req.query.json === '1') {
+        return res.json({ success: true, imageUrl: `/api/verifications/${id}/image/${type}?raw=1` });
+      }
+      return res.sendFile(altPath);
+    }
+  }
+
+  // 2. Fallback to in-memory cache if available
+  const cached = portraitMemoryCache.get(id);
+  if (cached) {
+    if ((type === 'portrait' || type === 'face') && cached.portraitBuffer) {
+      res.setHeader('Content-Type', cached.portraitMimeType || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(cached.portraitBuffer);
+    }
+    if ((type === 'person' || type === 'selfie' || type === 'biometric') && cached.personBuffer) {
+      res.setHeader('Content-Type', cached.personMimeType || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(cached.personBuffer);
+    }
+    if ((type === 'document' || type === 'passport') && cached.docBuffer) {
+      res.setHeader('Content-Type', cached.docMimeType || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      return res.send(cached.docBuffer);
+    }
+  }
+
+  // 3. Check Supabase Storage and media table
+  const sb = getClient();
+  if (sb) {
+    try {
+      // Query media table
+      const { data: mediaRows } = await sb
+        .from('media')
+        .select('*')
+        .eq('media_type', mediaTypeCol)
+        .ilike('file_path', `%${id}%`)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (mediaRows && mediaRows.length > 0) {
+        const mRow = mediaRows[0];
+        const bucket = mRow.bucket_name || 'verification-documents';
+        const storagePath = mRow.file_path;
+
+        const signedUrl = await createSignedStorageUrl(bucket, storagePath, 300);
+        if (signedUrl) {
+          if (req.query.json === '1') {
+            return res.json({ success: true, imageUrl: signedUrl });
+          }
+          return res.redirect(signedUrl);
+        }
+      }
+
+      // Try direct storage paths
+      const directPaths = [
+        `${mediaTypeCol === 'portrait' ? 'portraits' : mediaTypeCol === 'mrz_crop' ? 'mrz' : mediaTypeCol === 'biometric' ? 'biometrics' : 'documents'}/${id}/${filename}`,
+        `documents/${id}/${filename}`,
+        `verifications/${id}/${filename}`,
+      ];
+
+      for (const sp of directPaths) {
+        const signedUrl = await createSignedStorageUrl('verification-documents', sp, 300);
+        if (signedUrl) {
+          if (req.query.json === '1') {
+            return res.json({ success: true, imageUrl: signedUrl });
+          }
+          return res.redirect(signedUrl);
+        }
+      }
+    } catch (sbErr) {
+      console.warn('[Storage image retrieval warning]:', sbErr);
+    }
+  }
+
+  return res.status(404).json({ success: false, error: 'Image artifact not found' });
 });
 
-app.get('/api/persons/:id/biometric', (req, res) => {
+app.get('/api/persons/:id/biometric', async (req, res) => {
   const { id } = req.params;
   const personBioPath = path.join(biometricsDir, id, 'reference.jpg');
   if (fs.existsSync(personBioPath)) {
     return res.sendFile(personBioPath);
   }
+
+  // Supabase Storage lookup for real biometric reference
+  const sb = getClient();
+  if (sb) {
+    try {
+      const storagePath = `biometrics/${id}/reference.jpg`;
+      const signedUrl = await createSignedStorageUrl('verification-documents', storagePath, 300);
+      if (signedUrl) {
+        if (req.query.json === '1') {
+          return res.json({ success: true, imageUrl: signedUrl });
+        }
+        return res.redirect(signedUrl);
+      }
+    } catch (e) {}
+  }
+
   const samplePath = path.join(process.cwd(), 'backend', 'tests', 'assets', 'synthetic_face_match.png');
   if (fs.existsSync(samplePath)) {
     return res.sendFile(samplePath);
   }
-  return res.status(404).send('Biometric reference not found');
+  return res.status(404).json({ success: false, error: 'Biometric reference not found' });
 });
 
 async function processPassportImageEvidence(verificationId: string, fileBuffer: Buffer) {

@@ -3,7 +3,14 @@ import { fetchVerificationHistory } from '../../supabaseService';
 export default async function (req: Request) {
   try {
     const history = await fetchVerificationHistory();
-    return new Response(JSON.stringify(history), {
+    const records = Array.isArray(history) ? history : [];
+    const payload = {
+      success: true,
+      total: records.length,
+      records,
+    };
+
+    return new Response(JSON.stringify(payload), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
@@ -14,9 +21,13 @@ export default async function (req: Request) {
   } catch (err: any) {
     console.error('Error in /api/verification/history function:', err);
     return new Response(
-      JSON.stringify([]),
+      JSON.stringify({
+        success: true,
+        total: 0,
+        records: [],
+      }),
       {
-        status: 200, // Return empty JSON list so table renders safely
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -30,6 +41,13 @@ export default async function (req: Request) {
 export const handler = async (event: any, context: any) => {
   try {
     const history = await fetchVerificationHistory();
+    const records = Array.isArray(history) ? history : [];
+    const payload = {
+      success: true,
+      total: records.length,
+      records,
+    };
+
     return {
       statusCode: 200,
       headers: {
@@ -37,7 +55,7 @@ export const handler = async (event: any, context: any) => {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Access-Control-Allow-Origin': '*',
       },
-      body: JSON.stringify(history),
+      body: JSON.stringify(payload),
     };
   } catch (err: any) {
     console.error('Error in verification-history handler:', err);
@@ -47,7 +65,11 @@ export const handler = async (event: any, context: any) => {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
-      body: JSON.stringify([]),
+      body: JSON.stringify({
+        success: true,
+        total: 0,
+        records: [],
+      }),
     };
   }
 };
