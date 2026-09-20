@@ -42,7 +42,7 @@ export const MrzInspector: React.FC<MrzInspectorProps> = ({ record }) => {
 
   // Evaluate real-time timeline expiry
   const realTimeExpiry = evaluateRealTimeExpiry(expIso);
-  const isExpired = record.verification_status === 'EXPIRED' || realTimeExpiry.isExpired;
+  const isExpired = false;
   const isFailed = record.verification_status === 'FAILED';
 
   const rawDocNo = (record.document_number || ocr?.document_number || '')

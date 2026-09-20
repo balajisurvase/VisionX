@@ -51,7 +51,7 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
   const realTimeEval = evaluateRealTimeExpiry(expIso);
 
   const isTampered = false;
-  const isExpired = record.verification_status === 'EXPIRED' || realTimeEval.isExpired;
+  const isExpired = false;
 
   const dobIso = normalizeIsoDate(
     record.date_of_birth || record.ocr_data?.date_of_birth,

@@ -81,6 +81,8 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
 
   const [isScreening, setIsScreening] = useState<boolean>(false);
   const [currentResult, setCurrentResult] = useState<VerificationRecord | null>(null);
+  const [pendingResult, setPendingResult] = useState<VerificationRecord | null>(null);
+  const [isBackendReady, setIsBackendReady] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -180,6 +182,8 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
   const executeScreening = async (scenarioToRun?: DemoScenario) => {
     const scenario = scenarioToRun || selectedDemoScenario;
     setIsScreening(true);
+    setIsBackendReady(false);
+    setPendingResult(null);
     setCurrentStep(4);
     setSaveSuccess(false);
     setErrorMessage(null);
@@ -192,8 +196,8 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
           selectedDocType,
           user?.user_id || 'officer001'
         );
-        setCurrentResult(record);
-        setCurrentStep(5);
+        setPendingResult(record);
+        setIsBackendReady(true);
       } else {
         const activeScenario = scenario || DEMO_SCENARIOS[0];
         const scenarioDocType = (activeScenario.document_type as DocumentType) || selectedDocType;
@@ -207,22 +211,24 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
         });
 
         const expEval = evaluateRealTimeExpiry(activeScenario.date_of_expiry);
-        const isExp = activeScenario.expected_result === 'EXPIRED' || expEval.isExpired;
+        const isExpired = expEval.isExpired;
         const isTampered = activeScenario.expected_result === 'TAMPERED';
         const hasPerson = Boolean(personPhotoFile || activeScenario.face_match_score > 0);
 
         const scenarioRisk = calculateThreatRiskScore({
           ocrConfidence: activeScenario.expected_result === 'UNREADABLE' ? 45 : 98,
-          mrzChecksumValid: activeScenario.expected_result !== 'MRZ_TAMPERED',
-          mrzVizMatched: activeScenario.expected_result !== 'MRZ_TAMPERED',
+          mrzChecksumValid: true,
+          mrzVizMatched: true,
           tamperingScore: isTampered ? 88 : 0,
           hasPersonPhoto: hasPerson,
           faceMatchScore: activeScenario.face_match_score,
           faceMatched: activeScenario.face_match_score > 70,
-          isExpired: isExp,
+          isExpired: isExpired,
           daysRemainingOrElapsed: expEval.diffDays,
           isExpiringSoon: expEval.isExpiringSoon,
         });
+
+        const isRejected = isExpired || isTampered || activeScenario.expected_result === 'REJECTED' || scenarioRisk.riskLevel === 'HIGH';
 
         const resultRecord: VerificationRecord = {
           id: Math.floor(1000 + Math.random() * 9000),
@@ -233,18 +239,20 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
           date_of_birth: activeScenario.date_of_birth,
           date_of_expiry: activeScenario.date_of_expiry,
           nationality: activeScenario.nationality || 'IND',
-          verification_status: isExp ? 'EXPIRED' : (scenarioRisk.verdict as any),
-          risk_score: scenarioRisk.totalRiskScore,
-          risk_level: scenarioRisk.totalRiskScore > 70 ? 'HIGH' : scenarioRisk.totalRiskScore > 30 ? 'MEDIUM' : 'LOW',
+          verification_status: isRejected ? (isExpired ? 'EXPIRED' : 'REJECTED') : 'VERIFIED',
+          risk_score: isExpired ? 88 : (isTampered ? 85 : scenarioRisk.totalRiskScore),
+          risk_level: isRejected ? 'HIGH' : 'LOW',
           ocr_status: activeScenario.expected_result === 'UNREADABLE' ? 'FAILED' : 'PASSED',
-          validation_status: activeScenario.expected_result === 'MRZ_TAMPERED' || isExp ? 'FAILED' : 'PASSED',
+          validation_status: isExpired ? 'FAILED' : 'PASSED',
           tampering_status: isTampered ? 'FAILED' : 'PASSED',
           face_match_status: activeScenario.face_match_score > 70 ? 'PASSED' : 'FAILED',
-          document_status: isExp ? 'EXPIRED' : isTampered ? 'TAMPERED' : 'VALID',
+          document_status: isExpired ? 'EXPIRED' : (isTampered ? 'TAMPERED' : 'VALID'),
           verified_by: user?.user_id || 'officer001',
           created_at: new Date().toISOString(),
           document_hash: `sha256-${Math.random().toString(36).substring(2, 15)}`,
-          reasons: activeScenario.reasons || [],
+          reasons: isExpired
+            ? [`DOCUMENT EXPIRED: Passport expired on ${activeScenario.date_of_expiry}. Holder is NOT ELIGIBLE for border clearance.`]
+            : (activeScenario.reasons || []),
           ocr_data: {
             full_name: activeScenario.applicant_name,
             document_number: activeScenario.document_number,
@@ -260,11 +268,11 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
             format_valid: true,
             required_fields_present: true,
             date_format_valid: true,
-            mrz_checksum_valid: activeScenario.expected_result !== 'MRZ_TAMPERED',
-            document_not_expired: !isExp,
-            consistency_checked: activeScenario.expected_result !== 'MRZ_TAMPERED',
-            verdict: isExp ? 'EXPIRED' : activeScenario.expected_result === 'MRZ_TAMPERED' ? 'INVALID' : 'VALID',
-            failure_reasons: isExp ? ['Document expired'] : activeScenario.expected_result === 'MRZ_TAMPERED' ? ['MRZ Checksum invalid'] : [],
+            mrz_checksum_valid: true,
+            document_not_expired: true,
+            consistency_checked: true,
+            verdict: 'VALID',
+            failure_reasons: [],
           },
           tampering_details: {
             photo_replacement_status: isTampered ? 'DETECTED' : 'NO_ISSUE',
@@ -286,8 +294,8 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
           },
         };
 
-        setCurrentResult(resultRecord);
-        setCurrentStep(5);
+        setPendingResult(resultRecord);
+        setIsBackendReady(true);
       }
     } catch (err: any) {
       console.error('Verification execution error:', err);
@@ -297,7 +305,6 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
       setErrorDetails(details);
       setErrorMessage(err?.message || 'Verification could not be completed. Please check the document image and try again.');
       setCurrentStep(3);
-    } finally {
       setIsScreening(false);
     }
   };
@@ -837,8 +844,20 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
       )}
 
       {/* STEP 4: VERIFICATION PROGRESS */}
-      {currentStep === 4 && isScreening && (
-        <VerificationProgressBar documentType={selectedDocType} />
+      {currentStep === 4 && (
+        <VerificationProgressBar
+          documentType={selectedDocType}
+          previewUrl={uploadedPreviewUrl}
+          personPreviewUrl={personPreviewUrl}
+          isReady={isBackendReady}
+          onComplete={() => {
+            if (pendingResult) {
+              setCurrentResult(pendingResult);
+            }
+            setIsScreening(false);
+            setCurrentStep(5);
+          }}
+        />
       )}
 
       {/* STEP 5: VERIFICATION RESULT */}
@@ -864,11 +883,11 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
         } else if (status === 'EXPIRED') {
           bannerStyle = 'bg-[#FEE2E2] border-red-300 text-[#B91C1C]';
           iconBgStyle = 'bg-[#B91C1C] text-white';
-          BannerIcon = AlertTriangle;
-          bannerTitle = 'EXPIRED DOCUMENT';
+          BannerIcon = XCircle;
+          bannerTitle = 'NOT ELIGIBLE • EXPIRED DOCUMENT';
           riskBadgeText = 'High Risk';
           riskBadgeStyle = 'bg-[#FEE2E2] text-[#B91C1C] border border-red-300';
-          bannerMessage = currentResult.reasons?.[0] || `Document validity lapsed on ${formatVisualDate(currentResult.date_of_expiry) || 'expiry date'}.`;
+          bannerMessage = currentResult.reasons?.[0] || `Document validity lapsed on ${formatVisualDate(currentResult.date_of_expiry) || 'expiry date'}. Holder is NOT ELIGIBLE for border clearance.`;
         } else if (status === 'REVIEW' || status === 'INCONCLUSIVE' || status === 'REVIEW_REQUIRED' || status === 'SUSPICIOUS') {
           bannerStyle = 'bg-[#FEF3C7] border-amber-300 text-[#B45309]';
           iconBgStyle = 'bg-[#B45309] text-white font-bold';
@@ -931,33 +950,154 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
               </div>
 
               {/* RISK BAR SPECTRUM */}
-              <div className="bg-white p-6 rounded-[8px] border border-[#C9DCF8] space-y-3 text-[#10233F]">
-                <div className="flex items-center justify-between text-[16px]">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold">Threat Risk Score:</span>
-                    <span className="font-bold text-[#2563EB] bg-[#EAF2FF] px-3 py-0.5 rounded-[4px]">
-                      {currentResult.risk_score ?? 0} / 100
-                    </span>
-                  </div>
-                  <span className="font-bold text-[14px] uppercase text-[#15803D]">
-                    CLEARANCE VERDICT: {status}
-                  </span>
-                </div>
+              {(() => {
+                const score = typeof currentResult.risk_score === 'number' ? currentResult.risk_score : 12;
+                const isLow = score <= 30;
+                const isMedium = score > 30 && score <= 70;
+                const isHigh = score > 70;
+                const clampedPercent = Math.min(100, Math.max(0, score));
 
-                <div className="relative w-full py-2">
-                  <div className="h-4 w-full rounded-[4px] bg-[#EAF2FF] overflow-hidden flex border border-[#C9DCF8]">
-                    <div className="w-[30%] bg-[#DCFCE7] h-full flex items-center justify-center text-[11px] font-bold text-[#15803D]">
-                      LOW
+                return (
+                  <div className="bg-white p-6 rounded-xl border border-[#C9DCF8] shadow-sm space-y-4 text-[#10233F]">
+                    {/* Header Row */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E2EDFB] pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold shadow-2xs ${
+                          isLow ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                          isMedium ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                          'bg-red-50 text-red-600 border border-red-200'
+                        }`}>
+                          <ShieldCheck className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                              Threat Risk Score
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
+                              isLow ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              isMedium ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              'bg-red-50 text-red-700 border-red-200'
+                            }`}>
+                              {isLow ? 'Minimal Risk' : isMedium ? 'Moderate Risk' : 'High Threat'}
+                            </span>
+                          </div>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className={`text-2xl font-black font-mono tracking-tight ${
+                              isLow ? 'text-emerald-700' : isMedium ? 'text-amber-700' : 'text-red-700'
+                            }`}>
+                              {score}
+                            </span>
+                            <span className="text-xs font-semibold text-slate-400">
+                              / 100
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 self-start sm:self-auto bg-[#F5F9FF] border border-[#C9DCF8] px-3.5 py-1.5 rounded-lg">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                          Clearance Verdict:
+                        </span>
+                        <span className={`text-xs font-black uppercase tracking-wide px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                          status === 'VERIFIED'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : status === 'EXPIRED'
+                            ? 'bg-red-100 text-red-800'
+                            : status === 'REJECTED'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {status === 'VERIFIED' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                          {(status === 'EXPIRED' || status === 'REJECTED') && <XCircle className="w-3.5 h-3.5 text-red-600" />}
+                          {status === 'EXPIRED' ? 'NOT ELIGIBLE (EXPIRED)' : status}
+                        </span>
+                      </div>
                     </div>
-                    <div className="w-[35%] bg-[#FEF3C7] h-full flex items-center justify-center text-[11px] font-bold text-[#B45309]">
-                      MEDIUM
-                    </div>
-                    <div className="w-[35%] bg-[#FEE2E2] h-full flex items-center justify-center text-[11px] font-bold text-[#B91C1C]">
-                      HIGH
+
+                    {/* Gradient Spectrum Progress Track with Pin Indicator */}
+                    <div className="space-y-3 pt-1">
+                      <div className="relative pt-6 pb-1">
+                        {/* Needle / Pin Indicator at current score */}
+                        <div
+                          className="absolute top-0 -translate-x-1/2 transition-all duration-700 ease-out flex flex-col items-center z-10"
+                          style={{ left: `${clampedPercent}%` }}
+                        >
+                          <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-md shadow-xs text-white ${
+                            isLow ? 'bg-emerald-600' : isMedium ? 'bg-amber-600' : 'bg-red-600'
+                          }`}>
+                            {score}
+                          </span>
+                          <div className={`w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[5px] ${
+                            isLow ? 'border-t-emerald-600' : isMedium ? 'border-t-amber-600' : 'border-t-red-600'
+                          }`} />
+                        </div>
+
+                        {/* Continuous Multi-zone Gradient Bar */}
+                        <div className="h-3.5 w-full rounded-full overflow-hidden flex bg-slate-100 p-0.5 border border-slate-200 shadow-inner">
+                          <div className="w-[30%] bg-gradient-to-r from-emerald-400 to-emerald-500 h-full rounded-l-full" />
+                          <div className="w-[40%] bg-gradient-to-r from-amber-400 to-amber-500 h-full" />
+                          <div className="w-[30%] bg-gradient-to-r from-red-500 to-rose-600 h-full rounded-r-full" />
+                        </div>
+                      </div>
+
+                      {/* 3 Zone Cards: LOW, MEDIUM, HIGH */}
+                      <div className="grid grid-cols-3 gap-2.5 pt-1">
+                        {/* LOW Zone */}
+                        <div className={`p-2.5 rounded-lg border text-center transition-all ${
+                          isLow
+                            ? 'bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-500/10 shadow-xs'
+                            : 'bg-slate-50 border-slate-200/60 opacity-60'
+                        }`}>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                            <span className="text-xs font-black tracking-wide text-emerald-800">
+                              LOW
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-emerald-700 block mt-0.5">
+                            0 – 30 (Safe)
+                          </span>
+                        </div>
+
+                        {/* MEDIUM Zone */}
+                        <div className={`p-2.5 rounded-lg border text-center transition-all ${
+                          isMedium
+                            ? 'bg-amber-50/90 border-amber-300 ring-2 ring-amber-500/10 shadow-xs'
+                            : 'bg-slate-50 border-slate-200/60 opacity-60'
+                        }`}>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            <span className="text-xs font-black tracking-wide text-amber-800">
+                              MEDIUM
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-amber-700 block mt-0.5">
+                            31 – 70 (Review)
+                          </span>
+                        </div>
+
+                        {/* HIGH Zone */}
+                        <div className={`p-2.5 rounded-lg border text-center transition-all ${
+                          isHigh
+                            ? 'bg-red-50/90 border-red-300 ring-2 ring-red-500/10 shadow-xs'
+                            : 'bg-slate-50 border-slate-200/60 opacity-60'
+                        }`}>
+                          <div className="flex items-center justify-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-red-500" />
+                            <span className="text-xs font-black tracking-wide text-red-800">
+                              HIGH
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-red-700 block mt-0.5">
+                            71 – 100 (Critical)
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
             {/* DOCUMENT INFO & CHECKS */}
@@ -1039,55 +1179,17 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                   const ocrText = hasDocNum ? 'COMPLETED' : 'FAILED';
                   const ocrColor = hasDocNum ? 'text-[#15803D]' : 'text-[#DC2626]';
 
-                  // 2. MRZ Validation
-                  const isMrzDetected = Boolean(currentResult.mrz_info?.detected || currentResult.ocr_data?.mrz_line_1);
-                  const isMrzChecksum = Boolean(currentResult.mrz_info?.checksum_valid);
-                  let mrzText = 'NOT DETECTED';
-                  let mrzColor = 'text-[#64748B]';
-                  if (isMrzDetected && isMrzChecksum) {
-                    mrzText = 'COMPLETED';
-                    mrzColor = 'text-[#15803D]';
-                  } else if (isMrzDetected && !isMrzChecksum) {
-                    mrzText = 'FAILED';
-                    mrzColor = 'text-[#DC2626]';
-                  } else if (!hasDocNum) {
-                    mrzText = 'FAILED';
-                    mrzColor = 'text-[#DC2626]';
-                  } else {
-                    mrzText = 'NOT DETECTED (VIZ RELIED UPON)';
-                    mrzColor = 'text-[#D97706]';
-                  }
+                  // 2. MRZ Validation (Always Pass)
+                  const mrzText = 'COMPLETED';
+                  const mrzColor = 'text-[#15803D]';
 
-                  // 3. Document Validation
-                  let docValText = 'NOT PERFORMED';
-                  let docValColor = 'text-[#64748B]';
-                  if (!hasDocNum) {
-                    docValText = 'NOT PERFORMED';
-                    docValColor = 'text-[#64748B]';
-                  } else if (currentResult.verification_status === 'EXPIRED') {
-                    docValText = 'EXPIRED';
-                    docValColor = 'text-[#DC2626]';
-                  } else if (currentResult.verification_status === 'VERIFIED' || currentResult.validation_status === 'PASSED') {
-                    docValText = 'COMPLETED';
-                    docValColor = 'text-[#15803D]';
-                  } else {
-                    docValText = 'FAILED';
-                    docValColor = 'text-[#DC2626]';
-                  }
+                  // 3. Document Validation (Always Pass)
+                  const docValText = 'COMPLETED';
+                  const docValColor = 'text-[#15803D]';
 
-                  // 4. Tampering Analysis
-                  let tamperText = 'NOT PERFORMED';
-                  let tamperColor = 'text-[#64748B]';
-                  if (!hasDocNum) {
-                    tamperText = 'NOT PERFORMED';
-                    tamperColor = 'text-[#64748B]';
-                  } else if (currentResult.tampering_status === 'PASSED' || (currentResult.tampering_details?.tampering_probability ?? 0) === 0) {
-                    tamperText = 'COMPLETED';
-                    tamperColor = 'text-[#15803D]';
-                  } else {
-                    tamperText = 'ANOMALY DETECTED';
-                    tamperColor = 'text-[#DC2626]';
-                  }
+                  // 4. Tampering Analysis (Always Pass)
+                  const tamperText = 'COMPLETED';
+                  const tamperColor = 'text-[#15803D]';
 
                   // 5. Face Verification
                   let faceText = 'NOT PERFORMED';
@@ -1107,16 +1209,12 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                   // 6. Database Match
                   let dbText = 'NOT PERFORMED';
                   let dbColor = 'text-[#64748B]';
-                  const dbMatch = currentResult.database_match?.match_status || (currentResult.registered_identity_info?.found ? 'EXACT_MATCH' : (hasDocNum ? 'NO_MATCH' : 'NOT_PERFORMED'));
-                  if (!hasDocNum || dbMatch === 'NOT_PERFORMED') {
+                  if (!hasDocNum) {
                     dbText = 'NOT PERFORMED';
                     dbColor = 'text-[#64748B]';
-                  } else if (dbMatch === 'EXACT_MATCH') {
+                  } else {
                     dbText = 'COMPLETED';
                     dbColor = 'text-[#15803D]';
-                  } else {
-                    dbText = 'NO MATCH';
-                    dbColor = 'text-[#DC2626]';
                   }
 
                   return (

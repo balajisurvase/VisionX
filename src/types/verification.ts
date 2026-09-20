@@ -21,7 +21,8 @@ export type VerificationStatus =
   | 'UNREGISTERED'
   | 'EXPIRED'
   | 'NOT VERIFIED'
-  | 'PENDING';
+  | 'PENDING'
+  | 'REJECTED';
 
 export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
 

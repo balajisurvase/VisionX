@@ -29,7 +29,7 @@ import {
   normalizeIsoDate,
   calculateIcaoCheckDigit,
 } from './src/utils/mrzUtils';
-import { executeVerificationPipeline, portraitMemoryCache } from './verificationEngine';
+import { executeVerificationPipeline, portraitMemoryCache, compareFaceBuffers } from './verificationEngine';
 
 dotenv.config();
 
@@ -306,62 +306,6 @@ async function processPassportImageEvidence(verificationId: string, fileBuffer: 
     portraitBuffer,
     mrzBuffer,
   };
-}
-
-async function compareFaceBuffers(
-  uploadedBuf: Buffer | null,
-  registeredBuf: Buffer | null
-): Promise<{
-  uploaded_face_detected: boolean;
-  reference_face_detected: boolean;
-  similarity: number | null;
-  threshold: number;
-  match: boolean;
-}> {
-  if (!uploadedBuf || !registeredBuf) {
-    return {
-      uploaded_face_detected: Boolean(uploadedBuf),
-      reference_face_detected: Boolean(registeredBuf),
-      similarity: null,
-      threshold: 0.70,
-      match: false,
-    };
-  }
-
-  try {
-    const raw1 = await sharp(uploadedBuf).resize(64, 64, { fit: 'fill' }).grayscale().raw().toBuffer();
-    const raw2 = await sharp(registeredBuf).resize(64, 64, { fit: 'fill' }).grayscale().raw().toBuffer();
-
-    let dot = 0;
-    let norm1 = 0;
-    let norm2 = 0;
-    for (let i = 0; i < raw1.length; i++) {
-      const v1 = raw1[i];
-      const v2 = raw2[i];
-      dot += v1 * v2;
-      norm1 += v1 * v1;
-      norm2 += v2 * v2;
-    }
-    const mag = Math.sqrt(norm1) * Math.sqrt(norm2);
-    const cosineSim = mag > 0 ? dot / mag : 0;
-    const score = Math.round(cosineSim * 100) / 100;
-    return {
-      uploaded_face_detected: true,
-      reference_face_detected: true,
-      similarity: score,
-      threshold: 0.70,
-      match: score >= 0.70,
-    };
-  } catch (err) {
-    console.error('Face buffer comparison error:', err);
-    return {
-      uploaded_face_detected: true,
-      reference_face_detected: true,
-      similarity: 0.50,
-      threshold: 0.70,
-      match: false,
-    };
-  }
 }
 
 // Multer in-memory storage for document screening uploads
@@ -1626,7 +1570,7 @@ CRITICAL INSTRUCTIONS:
 - If MRZ is not detected or unreadable, DO NOT FAIL. Carefully extract all available fields from the Visual Inspection Zone (VIZ)!
 - Even if the document has slight glare, perspective angle, or is part of a larger photo, extract all visible text.
 - If a field is not present or cannot be read, return null (do not invent or hallucinate data).
-- Check for digital tampering: copy-paste text anomalies, photo replacement seams, font inconsistencies.
+- Check for actual physical/digital forgery: only report tampering_detected=true if there are glaring physical splice cuts or photoshopped text. Standard passport scans, photos, or digital uploads are CLEAN (tampering_detected=false, tampering_score=0).
 
 Return pure JSON only using this structure:
 {
@@ -1668,7 +1612,7 @@ Return pure JSON only using this structure:
 
       parts.push({ text: prompt });
 
-      const candidateModels = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.6-flash'];
+      const candidateModels = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
       let lastGeminiError: string | null = null;
 
       for (const modelName of candidateModels) {
@@ -1752,7 +1696,7 @@ Return pure JSON only using this structure:
 
       // Pass 2: Targeted MRZ crop analysis if MRZ not fully detected in primary pass
       if (gemini && (!mrzLine1 || !mrzLine2) && imageEvidence.mrzBuffer) {
-        for (const modelName of ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.6-flash']) {
+        for (const modelName of ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite']) {
           try {
             const mrzCropBase64 = imageEvidence.mrzBuffer.toString('base64');
             const mrzAiRes = await gemini.models.generateContent({

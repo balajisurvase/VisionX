@@ -144,67 +144,64 @@ export function calculateThreatRiskScore(input: ThreatRiskPillars): ThreatRiskEv
       biometricRisk = 0;
       biometricStatus = 'CLEAR';
       biometricExplanation = `High facial biometric congruence (${faceScore.toFixed(1)}% match). 68-point landmark geometry authentic.`;
-    } else if (faceScore >= 75) {
-      biometricRisk = Math.round((90 - faceScore) * 0.4); // 1 to 6 pts
+    } else if (faceScore >= 70) {
+      biometricRisk = Math.round((90 - faceScore) * 0.4); // 1 to 8 pts
       biometricStatus = 'CLEAR';
-      biometricExplanation = `Positive face match (${faceScore.toFixed(1)}%). Slight expression, lighting, or aging divergence.`;
-    } else if (faceScore >= 50) {
-      biometricRisk = Math.round(7 + (75 - faceScore) * 0.48); // 7 to 19 pts
+      biometricExplanation = `Positive face match (${faceScore.toFixed(1)}%). Landmark topology authentic with slight expression / lighting variation.`;
+    } else if (faceScore >= 55) {
+      biometricRisk = Math.round(35 + (70 - faceScore) * 1.5); // 35 to 57 pts
       biometricStatus = 'ADVISORY';
-      biometricExplanation = `Borderline face match (${faceScore.toFixed(1)}%). Landmark divergence across nasal bridge / zygomatic arch.`;
+      biometricExplanation = `Borderline face match (${faceScore.toFixed(1)}%, threshold ≥ 70%). Landmark divergence across nasal bridge / zygomatic arch.`;
       recommendations.push('Borderline biometric match — perform manual face comparison at secondary inspection desk.');
     } else {
-      biometricRisk = 25;
+      biometricRisk = Math.round(60 + (55 - faceScore) * 0.6); // 60 to 90 pts
       biometricStatus = 'CRITICAL';
-      biometricExplanation = `Severe biometric mismatch (${faceScore.toFixed(1)}% match). Live traveler does not match document portrait.`;
-      recommendations.push('CRITICAL BIOMETRIC ALERT: Live traveler facial landmarks do not match document portrait (Imposter risk).');
+      biometricExplanation = `Severe biometric mismatch (${faceScore.toFixed(1)}% match, threshold ≥ 70%). Live traveler does not match document portrait.`;
+      recommendations.unshift('CRITICAL BIOMETRIC ALERT: Live traveler facial landmarks do not match document portrait (Imposter / Impersonation risk).');
     }
   }
 
   // =========================================================================
-  // 5. Real-Time Temporal Expiry Component (Critical Override / 0-60 points)
+  // 5. Real-Time Temporal Expiry Component
   // =========================================================================
   let expiryRisk = 0;
   let expiryStatus: RiskPillarBreakdown['status'] = 'CLEAR';
   let expiryExplanation = '';
 
   if (input.isExpired) {
-    const elapsedDays = Math.abs(input.daysRemainingOrElapsed);
-    expiryRisk = elapsedDays > 30 ? 60 : 50;
+    expiryRisk = 75;
     expiryStatus = 'CRITICAL';
-    expiryExplanation = `Document validity elapsed in real-time timeline (${elapsedDays} days ago). Inadmissible for international travel.`;
-    recommendations.unshift(`DOCUMENT EXPIRED: Real-time validity expired on system timeline. Clearance strictly prohibited.`);
-  } else if (input.isExpiringSoon || (input.daysRemainingOrElapsed > 0 && input.daysRemainingOrElapsed <= 180)) {
-    expiryRisk = 8;
+    expiryExplanation = `Document validity has expired (${input.daysRemainingOrElapsed !== undefined ? Math.abs(input.daysRemainingOrElapsed).toLocaleString() + ' days elapsed' : 'expired'}). Not eligible for international travel.`;
+    recommendations.unshift('CRITICAL TEMPORAL BREACH: Document has expired. Holder is NOT ELIGIBLE for border clearance.');
+  } else if (input.isExpiringSoon) {
+    expiryRisk = 12;
     expiryStatus = 'ADVISORY';
-    expiryExplanation = `Document valid but expires within 6 months (${input.daysRemainingOrElapsed} days remaining). ICAO 6-month rule advisory.`;
-    recommendations.push(`ICAO Advisory: Document validity expires in ${input.daysRemainingOrElapsed} days (< 6 months). Enforce destination visa rules.`);
+    expiryExplanation = `Document expires within 6 months (${input.daysRemainingOrElapsed} days remaining). May breach destination validity requirements.`;
+    recommendations.push('6-MONTH VALIDITY WARNING: Document expiring soon. Verify destination entry criteria.');
   } else {
     expiryRisk = 0;
     expiryStatus = 'CLEAR';
-    expiryExplanation = `Document is active and within valid timeline limits (${input.daysRemainingOrElapsed} days remaining).`;
+    expiryExplanation = `Document is active and within valid timeline limits (${input.daysRemainingOrElapsed !== undefined ? input.daysRemainingOrElapsed.toLocaleString() + ' days remaining' : 'active'}).`;
   }
 
   // =========================================================================
   // Composite Threat Risk Score
   // =========================================================================
-  let rawScore = ocrRisk + mrzRisk + forensicRisk + biometricRisk + expiryRisk;
+  const isBiometricFailed = input.hasPersonPhoto && input.faceMatchScore < 70;
+  const rawScore = ocrRisk + mrzRisk + forensicRisk + biometricRisk + expiryRisk;
 
-  // Real-time Expiry enforcement: An expired document MUST have a high threat risk score (>= 75)
-  if (input.isExpired) {
-    rawScore = Math.max(78, rawScore);
-  }
-
-  const finalScore = Math.min(100, Math.max(0, rawScore));
+  const finalScore = (input.isExpired || isBiometricFailed)
+    ? Math.min(100, Math.max(88, rawScore))
+    : Math.min(100, Math.max(0, rawScore));
 
   // Determine Risk Level
   let riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  if (finalScore <= 25) {
-    riskLevel = 'LOW';
-  } else if (finalScore <= 60) {
-    riskLevel = 'MEDIUM';
-  } else {
+  if (input.isExpired || isBiometricFailed || finalScore > 60) {
     riskLevel = 'HIGH';
+  } else if (finalScore <= 25) {
+    riskLevel = 'LOW';
+  } else {
+    riskLevel = 'MEDIUM';
   }
 
   // Determine Verdict
@@ -214,8 +211,12 @@ export function calculateThreatRiskScore(input: ThreatRiskPillars): ThreatRiskEv
 
   if (input.isExpired) {
     verdict = 'EXPIRED';
-    verdictTitle = 'Expired • Document Validity Lapsed';
-    verdictSummary = 'Document expiration date has elapsed on real-time timeline. Inadmissible for border transit.';
+    verdictTitle = 'Ineligible • Document Expired';
+    verdictSummary = 'Document expiration date has elapsed on real-time timeline. Holder is NOT ELIGIBLE for border clearance.';
+  } else if (isBiometricFailed) {
+    verdict = 'FAILED';
+    verdictTitle = 'Refuse • Biometric Facial Mismatch / Impersonation Alert';
+    verdictSummary = `1:1 Facial biometric match failed threshold (${input.faceMatchScore.toFixed(0)}% similarity, threshold ≥ 70%). Live traveler does not match document portrait.`;
   } else if (mrzRisk >= 20 || forensicRisk >= 25 || biometricRisk >= 20 || finalScore >= 65) {
     verdict = 'FAILED';
     verdictTitle = 'Refuse • Document Alteration / Forgery Detected';
@@ -223,7 +224,7 @@ export function calculateThreatRiskScore(input: ThreatRiskPillars): ThreatRiskEv
   } else if (finalScore > 25 || ocrStatus === 'ADVISORY' || biometricStatus === 'ADVISORY' || expiryStatus === 'ADVISORY') {
     verdict = 'SUSPICIOUS';
     verdictTitle = 'Caution • Secondary Inspection Desk Required';
-    verdictSummary = 'Minor advisory flags or compression variances require officer secondary review.';
+    verdictSummary = 'Minor advisory flags or temporal threshold limits require officer secondary review.';
   } else {
     verdict = 'VERIFIED';
     verdictTitle = 'Pass • Document Cleared & Authentic';
