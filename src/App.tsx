@@ -1,50 +1,45 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Login } from './pages/Login';
-import { Landing } from './pages/Landing';
-import { Dashboard } from './pages/Dashboard';
-import { VerifyDocument } from './pages/VerifyDocument';
-import { Documents } from './pages/Documents';
-import { History } from './pages/History';
-import { Reports } from './pages/Reports';
-import { Profile } from './pages/Profile';
-import { DemoCenter } from './pages/DemoCenter';
-import { Settings } from './pages/Settings';
-import { logoutUser } from './services/authService';
-import { OfficerUser } from './types/auth';
-import { DemoScenario, VerificationRecord } from './types/verification';
+import { SocietyDashboard } from './pages/SocietyDashboard';
+import { ResidentsManagement } from './pages/ResidentsManagement';
+import { BookingsAmenities } from './pages/BookingsAmenities';
+import { MaintenanceBilling } from './pages/MaintenanceBilling';
+import { ComplaintsDesk } from './pages/ComplaintsDesk';
+import { VisitorsGate } from './pages/VisitorsGate';
+import { FinanceLedger } from './pages/FinanceLedger';
+import { NoticesBoard } from './pages/NoticesBoard';
+import { CommunicationsDesk } from './pages/CommunicationsDesk';
+import { SocietySettings } from './pages/SocietySettings';
+import { AuthSessionUser, UserRole } from './types/society';
 
 export function App() {
   const [currentPath, setCurrentPath] = useState<string>('/dashboard');
-  const [user, setUser] = useState<OfficerUser | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [activeDemoScenario, setActiveDemoScenario] = useState<DemoScenario | null>(null);
-  const [inspectedRecord, setInspectedRecord] = useState<VerificationRecord | null>(null);
+  const [user, setUser] = useState<AuthSessionUser | null>({
+    id: 'ADM-001',
+    name: 'Balaji Ravindra Survase',
+    email: 'admin@visi0nx.gov.in',
+    phone: 9876543210,
+    role: 'ADMIN',
+    society_id: 'SOC-PUNE-01',
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
 
-  // Automatically logout on page reload / fresh startup per security requirements
-  useEffect(() => {
-    logoutUser();
-    setIsAuthenticated(false);
-    setUser(null);
-    setCurrentPath('/login');
-  }, []);
-
-  const handleLoginSuccess = (officer: OfficerUser) => {
-    setUser(officer);
+  const handleLoginSuccess = (authenticatedUser: AuthSessionUser) => {
+    setUser(authenticatedUser);
     setIsAuthenticated(true);
     setCurrentPath('/dashboard');
   };
 
   const handleLogout = () => {
-    logoutUser();
     setUser(null);
     setIsAuthenticated(false);
     setCurrentPath('/login');
   };
 
   const handleNavigate = (path: string) => {
-    if (!isAuthenticated && path !== '/login' && path !== '/landing') {
+    if (!isAuthenticated && path !== '/login') {
       setCurrentPath('/login');
       return;
     }
@@ -52,178 +47,101 @@ export function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSelectDemoScenario = (scenario: DemoScenario) => {
-    setActiveDemoScenario(scenario);
-    setInspectedRecord(null);
-    setCurrentPath('/verify');
+  const handleSwitchRole = (newRole: UserRole) => {
+    if (newRole === 'ADMIN') {
+      setUser({
+        id: 'ADM-001',
+        name: 'Balaji Ravindra Survase',
+        email: 'admin@visi0nx.gov.in',
+        phone: 9876543210,
+        role: 'ADMIN',
+        society_id: 'SOC-PUNE-01',
+      });
+    } else if (newRole === 'RESIDENT') {
+      setUser({
+        id: 'RES-A101',
+        name: 'Amitabh Sen',
+        email: 'amitabh.sen@example.com',
+        phone: '9820112233',
+        role: 'RESIDENT',
+        society_id: 'SOC-PUNE-01',
+        tower: 'A',
+        flat: '101',
+      });
+    } else {
+      setUser({
+        id: 'SEC-GATE-01',
+        name: 'Vikram Singh',
+        email: 'security@visi0nx.gov.in',
+        phone: '9876543211',
+        role: 'SECURITY',
+        society_id: 'SOC-PUNE-01',
+        shift: 'Morning (06:00 - 14:00)',
+      });
+    }
+    setCurrentPath('/dashboard');
   };
 
-  const handleInspectRecord = (record: VerificationRecord) => {
-    setInspectedRecord(record);
-    setActiveDemoScenario(null);
-    setCurrentPath('/verify');
-  };
-
-  const handleViewReport = (record: VerificationRecord) => {
-    setInspectedRecord(record);
-    setCurrentPath('/reports');
-  };
-
-  const handleVerifySpecificDoc = () => {
-    setCurrentPath('/verify');
-  };
-
-  // If user requests landing page
-  if (currentPath === '/landing') {
-    return (
-      <Landing
-        onGetStarted={() => {
-          if (isAuthenticated) {
-            setCurrentPath('/dashboard');
-          } else {
-            setCurrentPath('/login');
-          }
-        }}
-      />
-    );
-  }
-
-  // If not authenticated, render the dedicated VisionX Login page
   if (!isAuthenticated || currentPath === '/login') {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Get current page title for the header
-  const getPageInfo = () => {
+  const renderContent = () => {
     switch (currentPath) {
       case '/dashboard':
       case '/':
-        return {
-          title: 'VisionX Verification Workstation',
-          subtitle: 'Identity & document screening dashboard',
-        };
-      case '/verify':
-        return {
-          title: 'New Document Verification',
-          subtitle: 'Automated document & identity screening pipeline',
-        };
-      case '/documents':
-        return {
-          title: 'Documents Registry',
-          subtitle: 'Registered identity documents database',
-        };
-      case '/history':
-        return {
-          title: 'Verification History & Audit Ledger',
-          subtitle: 'Complete record of past identity screening operations',
-        };
-      case '/reports':
-        return {
-          title: 'Forensic Reports Center',
-          subtitle: 'Official identity & document verification dossiers',
-        };
-      case '/profile':
-        return {
-          title: 'Officer Credentials & Performance',
-          subtitle: 'Terminal authorization and screening statistics',
-        };
-      case '/demo':
-        return {
-          title: 'Benchmark Test Center',
-          subtitle: 'Standardized evaluation scenarios and attack vectors',
-        };
+        return <SocietyDashboard currentUser={user} onNavigate={handleNavigate} />;
+      case '/residents':
+        return <ResidentsManagement currentUser={user} />;
+      case '/bookings':
+        return <BookingsAmenities currentUser={user} />;
+      case '/maintenance':
+        return <MaintenanceBilling currentUser={user} />;
+      case '/complaints':
+        return <ComplaintsDesk currentUser={user} />;
+      case '/visitors':
+        return <VisitorsGate currentUser={user} />;
+      case '/finance':
+        return <FinanceLedger currentUser={user} />;
+      case '/notices':
+        return <NoticesBoard currentUser={user} />;
+      case '/communications':
+        return <CommunicationsDesk currentUser={user} />;
       case '/settings':
-        return {
-          title: 'System Settings & Security',
-          subtitle: 'Terminal configuration, AI vision models, and database credentials',
-        };
+        return <SocietySettings />;
       default:
-        return {
-          title: 'VisionX Workstation',
-          subtitle: 'Identity & Document Verification System',
-        };
+        return <SocietyDashboard currentUser={user} onNavigate={handleNavigate} />;
     }
   };
-
-  const pageInfo = getPageInfo();
 
   return (
     <div
       style={{ fontFamily: "'Times New Roman', Times, serif" }}
-      className="flex h-screen w-screen overflow-hidden bg-[#F5F9FF] text-[#10233F]"
+      className="flex h-screen bg-[#FAF8FC] text-[#212121] overflow-hidden"
     >
-      {/* Left Sidebar */}
+      {/* 1. Sidebar Navigation */}
       <Sidebar
         currentPath={currentPath}
         onNavigate={handleNavigate}
         user={user}
         onLogout={handleLogout}
-        onViewLanding={() => setCurrentPath('/landing')}
       />
 
-      {/* Main Content Viewport */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+      {/* 2. Main Content View Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header
-          title={pageInfo.title}
-          subtitle={pageInfo.subtitle}
           user={user}
+          currentPath={currentPath}
+          onNavigate={handleNavigate}
+          onLogout={handleLogout}
+          onSwitchRole={handleSwitchRole}
         />
 
-        <main className="flex-1 overflow-y-auto bg-[#F5F9FF]">
-          {(currentPath === '/dashboard' || currentPath === '/') && (
-            <Dashboard
-              onNavigate={handleNavigate}
-              onSelectRecordForInspection={handleInspectRecord}
-            />
-          )}
-
-          {currentPath === '/verify' && (
-            <VerifyDocument
-              user={user}
-              activeDemoScenario={activeDemoScenario}
-              inspectedRecord={inspectedRecord}
-              onClearDemo={() => {
-                setActiveDemoScenario(null);
-                setInspectedRecord(null);
-              }}
-              onNavigate={handleNavigate}
-            />
-          )}
-
-          {currentPath === '/documents' && (
-            <Documents onVerifyDocument={handleVerifySpecificDoc} />
-          )}
-
-          {currentPath === '/history' && (
-            <History
-              onNavigate={handleNavigate}
-              onInspectRecord={handleInspectRecord}
-              onViewReport={handleViewReport}
-            />
-          )}
-
-          {currentPath === '/reports' && (
-            <Reports
-              initialRecord={inspectedRecord}
-              onNavigateToVerify={() => setCurrentPath('/verify')}
-            />
-          )}
-
-          {currentPath === '/profile' && (
-            <Profile user={user} onLogout={handleLogout} />
-          )}
-
-          {currentPath === '/demo' && (
-            <DemoCenter onSelectDemoScenario={handleSelectDemoScenario} />
-          )}
-
-          {currentPath === '/settings' && (
-            <Settings user={user} onLogout={handleLogout} />
-          )}
+        <main className="flex-1 overflow-y-auto bg-[#FAF8FC]">
+          {renderContent()}
         </main>
       </div>
     </div>
   );
 }
-
 export default App;

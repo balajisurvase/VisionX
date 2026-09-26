@@ -7,146 +7,35 @@
 }
 
 :root {
-  --primary-navy: #102A56;
-  --primary-blue: #2563EB;
-  --secondary-blue: #3B82F6;
-  --light-blue: #EAF2FF;
-  --very-light-blue: #F5F9FF;
-  --surface: #F5F9FF;
-  --card: #FFFFFF;
-  --text-dark: #10233F;
-  --text-muted: #64748B;
-  --border-color: #C9DCF8;
+  --gov-purple: #4A148C;
+  --gov-purple-dark: #310C61;
+  --gov-purple-royal: #6A1B9A;
+  --gov-purple-light: #7B1FA2;
+  --gov-purple-pale: #F3E5F5;
+  --gov-purple-border: #E1BEE7;
+  --gov-bg: #F7F5FA;
+  --gov-card: #FFFFFF;
+  --gov-text: #212121;
+  --gov-text-muted: #616161;
   
-  --success-bg: #DCFCE7;
-  --success-text: #15803D;
-  --warning-bg: #FEF3C7;
-  --warning-text: #B45309;
-  --danger-bg: #FEE2E2;
-  --danger-text: #B91C1C;
+  --success-bg: #E8F5E9;
+  --success-text: #2E7D32;
+  --success-border: #A5D6A7;
+  --warning-bg: #FFF8E1;
+  --warning-text: #F57F17;
+  --warning-border: #FFE082;
+  --danger-bg: #FFEBEE;
+  --danger-text: #C62828;
+  --danger-border: #EF9A9A;
 
   --font-sans: 'Times New Roman', Times, serif;
   --font-display: 'Times New Roman', Times, serif;
   --font-mono: 'Times New Roman', Times, serif;
 }
 
-/* Keyframe Animations for High-Tech Verification Loading Screen */
-@keyframes laserScan {
-  0% {
-    top: 0%;
-    opacity: 0.8;
-  }
-  50% {
-    top: 92%;
-    opacity: 1;
-  }
-  100% {
-    top: 0%;
-    opacity: 0.8;
-  }
-}
-
-@keyframes laserScanHorizontal {
-  0% {
-    left: 0%;
-    opacity: 0.8;
-  }
-  50% {
-    left: 97%;
-    opacity: 1;
-  }
-  100% {
-    left: 0%;
-    opacity: 0.8;
-  }
-}
-
-@keyframes radarPulse {
-  0% {
-    transform: scale(0.85);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.15);
-    opacity: 0.3;
-  }
-  100% {
-    transform: scale(0.85);
-    opacity: 0.8;
-  }
-}
-
-@keyframes spinSlow {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes spinSlowReverse {
-  0% {
-    transform: rotate(360deg);
-  }
-  100% {
-    transform: rotate(0deg);
-  }
-}
-
-@keyframes shimmerGlow {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes pulseBorder {
-  0%, 100% {
-    border-color: rgba(37, 99, 235, 0.4);
-    box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
-  }
-  50% {
-    border-color: rgba(37, 99, 235, 0.9);
-    box-shadow: 0 0 25px rgba(37, 99, 235, 0.5);
-  }
-}
-
-.animate-laser-scan {
-  animation: laserScan 2.2s ease-in-out infinite !important;
-}
-
-.animate-laser-scan-horizontal {
-  animation: laserScanHorizontal 2.4s ease-in-out infinite !important;
-}
-
-.animate-radar-pulse {
-  animation: radarPulse 2s ease-in-out infinite !important;
-}
-
-.animate-spin-slow {
-  animation: spinSlow 12s linear infinite !important;
-}
-
-.animate-spin-slow-reverse {
-  animation: spinSlowReverse 16s linear infinite !important;
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, #2563EB, #60A5FA, #2563EB);
-  background-size: 200% 100%;
-  animation: shimmerGlow 2s linear infinite !important;
-}
-
-.animate-pulse-border {
-  animation: pulseBorder 2s ease-in-out infinite !important;
-}
-
 body {
-  background-color: var(--surface);
-  color: var(--text-dark);
+  background-color: var(--gov-bg);
+  color: var(--gov-text);
   font-family: 'Times New Roman', Times, serif;
   margin: 0;
   padding: 0;
@@ -165,18 +54,19 @@ h1, h2, h3, h4, h5, h6, button, input, select, textarea, label {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--surface);
+  background: var(--gov-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #C9DCF8;
+  background: #CE93D8;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B82F6;
+  background: #9C27B0;
 }
 
 /* Accessible Focus */
 *:focus-visible {
-  outline: 2px solid var(--primary-blue) !important;
+  outline: 2px solid var(--gov-purple) !important;
   outline-offset: 1px !important;
 }
+

@@ -197,7 +197,7 @@ export const DocumentInspectionViewport: React.FC<DocumentInspectionViewportProp
         {showElaHeatmap && (
           <div className="absolute inset-0 pointer-events-none z-20 mix-blend-screen opacity-70 bg-gradient-to-tr from-purple-900/40 via-transparent to-amber-600/30 flex items-center justify-center">
             <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded text-[10px] font-mono font-bold text-amber-400 border border-amber-500/30">
-              OpenCV Error Level Analysis Active: Residual Delta Heatmap
+              Error Level Analysis Active: Residual Delta Heatmap
             </div>
             {isTampered && (
               <div className="absolute left-[15%] top-[25%] w-28 h-36 border-2 border-red-500 rounded bg-red-500/20 flex items-center justify-center">

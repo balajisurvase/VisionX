@@ -9,6 +9,7 @@ import {
   getDashboardStats,
   getDocuments,
   getHistory,
+  clearHistory,
   getHistoryDetail,
   getAuditLogs,
   verifyAuditChain as verifyAuditChainApi,
@@ -29,6 +30,15 @@ export async function fetchVerificationRecords(): Promise<VerificationRecord[]> 
   } catch (err) {
     console.warn('Failed to fetch verification records:', err);
     return [];
+  }
+}
+
+export async function clearVerificationRecords(): Promise<{ success: boolean; message: string }> {
+  try {
+    return await clearHistory();
+  } catch (err: any) {
+    console.warn('Failed to clear verification records:', err);
+    return { success: false, message: err.message || 'Failed to clear records' };
   }
 }
 

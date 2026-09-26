@@ -27,6 +27,17 @@ export async function getSharp() {
   return sharpModule;
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string): Promise<T> {
+  let timer: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(errorMsg)), ms);
+  });
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    timeoutPromise,
+  ]);
+}
+
 export interface VerificationRequestInput {
   docBuffer?: Buffer;
   docOriginalName?: string;
@@ -206,7 +217,28 @@ export async function compareFaceBuffers(
   // 1. Try Gemini Vision 1:1 Facial Biometric Comparison
   const ai = getGeminiClient();
   if (ai) {
-    const candidateModels = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+    const candidateModels = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+    const sharp = await getSharp();
+    let sendUploadedBuf = uploadedBuf;
+    let sendReferenceBuf = referenceBuf;
+    if (sharp) {
+      try {
+        sendUploadedBuf = await sharp(uploadedBuf)
+          .rotate()
+          .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+        sendReferenceBuf = await sharp(referenceBuf)
+          .rotate()
+          .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+      } catch (e) {
+        sendUploadedBuf = uploadedBuf;
+        sendReferenceBuf = referenceBuf;
+      }
+    }
+
     for (const modelName of candidateModels) {
       try {
         console.log(`[BIOMETRICS] Initiating Gemini (${modelName}) 1:1 facial biometric comparison...`);
@@ -219,13 +251,13 @@ export async function compareFaceBuffers(
                 {
                   inlineData: {
                     mimeType: 'image/jpeg',
-                    data: uploadedBuf.toString('base64'),
+                    data: sendUploadedBuf.toString('base64'),
                   },
                 },
                 {
                   inlineData: {
                     mimeType: 'image/jpeg',
-                    data: referenceBuf.toString('base64'),
+                    data: sendReferenceBuf.toString('base64'),
                   },
                 },
                 {
@@ -276,8 +308,7 @@ Respond with ONLY a valid JSON object matching this schema:
           }
         });
 
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI face comparison timeout')), 12000));
-        const response = (await Promise.race([aiPromise, timeoutPromise])) as any;
+        const response = (await withTimeout(aiPromise, 30000, 'AI face comparison timeout')) as any;
 
         const responseText = response.text ? response.text.trim() : '';
         if (responseText) {
@@ -306,8 +337,13 @@ Respond with ONLY a valid JSON object matching this schema:
               : `Biometric facial mismatch detected (${score}% similarity). Live traveler does not match passport portrait.`),
           };
         }
-      } catch (geminiErr) {
-        console.warn(`[BIOMETRICS] Gemini face comparison failed on model ${modelName}:`, geminiErr);
+      } catch (geminiErr: any) {
+        const errMsg = geminiErr?.message || String(geminiErr);
+        if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('UNAVAILABLE') || errMsg.includes('timeout')) {
+          console.log(`[BIOMETRICS] Gemini model ${modelName} unavailable/timed out (${errMsg.slice(0, 80)}), trying next candidate...`);
+        } else {
+          console.warn(`[BIOMETRICS] Gemini face comparison notice on model ${modelName}:`, errMsg.slice(0, 100));
+        }
       }
     }
   }
@@ -420,87 +456,45 @@ export function extractOpticalAndSpecimenData(
     extractedMrz2 = td3Line2Match[0].toUpperCase();
   }
 
-  // 2. Check for known demo credentials or filename patterns
-  if (
-    normName.includes('michelle') ||
-    normName.includes('delapaz') ||
-    normName.includes('910239248') ||
-    utf8String.includes('MICHELLE') ||
-    utf8String.includes('DELAPAZ')
-  ) {
-    extractedDocNum = '910239248';
-    extractedFullName = 'MICHELLE DELAPAZ';
-    extractedNationality = 'USA';
-    extractedDob = '1999-08-07';
-    extractedExpiry = '2030-02-05';
-    extractedGender = 'F';
-    extractedMrz1 = 'P<USADELAPAZ<<MICHELLE<<<<<<<<<<<<<<<<<<<<<<';
-    extractedMrz2 = '9102392482USA9908071F3002051900781200<129676';
-    detectedTampering = false;
-    detectedTamperingScore = 0;
-    detectedTamperingReasons = [];
-    detectedDocType = 'Passport';
-  } else if (
-    normName.includes('david') ||
-    normName.includes('chen') ||
-    normName.includes('e78901234') ||
-    (utf8String.includes('DAVID') && utf8String.includes('CHEN'))
-  ) {
-    extractedDocNum = 'E78901234';
-    extractedFullName = 'DAVID CHEN';
-    extractedNationality = 'GBR';
-    extractedDob = '1985-05-12';
-    extractedExpiry = '2029-08-20';
-    extractedGender = 'M';
-    extractedMrz1 = 'P<GBRCHEN<<DAVID<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-    extractedMrz2 = 'E789012343GBR8505126M2908204<<<<<<<<<<<<<<02';
-    detectedDocType = 'Passport';
-  } else if (
-    normName.includes('sarah') ||
-    normName.includes('jenkins') ||
-    normName.includes('dl-98765432') ||
-    utf8String.includes('JENKINS')
-  ) {
-    extractedDocNum = 'DL-98765432-A';
-    extractedFullName = 'SARAH JENKINS';
-    extractedNationality = 'USA';
-    extractedDob = '1992-11-23';
-    extractedExpiry = '2028-10-15';
-    extractedGender = 'F';
-    detectedDocType = 'Driving License';
-  } else if (
-    normName.includes('elena') ||
-    normName.includes('rostova') ||
-    normName.includes('id-ru-882190') ||
-    utf8String.includes('ROSTOVA')
-  ) {
-    extractedDocNum = 'ID-RU-882190';
-    extractedFullName = 'ELENA ROSTOVA';
-    extractedNationality = 'RUS';
-    extractedDob = '1990-03-14';
-    extractedExpiry = '2025-06-30';
-    extractedGender = 'F';
-    detectedDocType = 'National ID';
-  } else {
-    // Check filename for alphanumeric document IDs (e.g. P12345678, 910239248, DL-12345)
-    const docIdInFilename = normName.match(/\b([A-Z]{1,2}[0-9]{6,9}|[0-9]{9})\b/i);
-    if (docIdInFilename) {
-      extractedDocNum = docIdInFilename[1].toUpperCase();
-    }
-  }
-
-  // 3. If MRZ lines were extracted, parse TD3
+  // 2. Parse MRZ if detected
   if (extractedMrz1 && extractedMrz2) {
     const parsed = parseTd3Mrz(extractedMrz1, extractedMrz2);
     if (parsed) {
-      if (!extractedDocNum) extractedDocNum = parsed.documentNumber;
-      if (!extractedFullName) extractedFullName = parsed.fullName;
-      if (!extractedNationality) extractedNationality = parsed.nationality;
-      if (!extractedDob) extractedDob = parsed.dateOfBirthIso;
-      if (!extractedExpiry) extractedExpiry = parsed.dateOfExpiryIso;
-      if (!extractedGender) extractedGender = parsed.gender;
+      if (parsed.documentNumber) extractedDocNum = parsed.documentNumber;
+      if (parsed.fullName) extractedFullName = parsed.fullName;
+      if (parsed.nationality) extractedNationality = parsed.nationality;
+      if (parsed.dateOfBirthIso) extractedDob = parsed.dateOfBirthIso;
+      if (parsed.dateOfExpiryIso) extractedExpiry = parsed.dateOfExpiryIso;
+      if (parsed.gender) extractedGender = parsed.gender;
     }
   }
+
+  // 3. Fallback regex search in UTF-8 text for VIZ fields if MRZ not fully populated
+  if (!extractedDocNum) {
+    const docMatch = utf8String.match(/(?:Passport\s*No\.?|Document\s*No\.?|Passeport)[\s\:\/N°]*([A-Z0-9]{7,10})/i);
+    if (docMatch) extractedDocNum = docMatch[1].toUpperCase();
+    else {
+      const fnMatch = normName.match(/\b([A-Z]{1,2}[0-9]{6,9}|[0-9]{9})\b/i);
+      if (fnMatch) extractedDocNum = fnMatch[1].toUpperCase();
+    }
+  }
+
+  if (!extractedFullName) {
+    const nameMatch = utf8String.match(/(?:Full\s*Name|Nom\s*et\s*prénoms)[\s\:\/]*([A-Z\s]{3,35})/i);
+    if (nameMatch) extractedFullName = nameMatch[1].trim().toUpperCase();
+  }
+
+  if (!extractedDob) {
+    const dobMatch = utf8String.match(/(?:Date\s*of\s*Birth|Date\s*de\s*naissance)[\s\:\/]*([0-9]{4}[-\/][0-9]{2}[-\/][0-9]{2}|[0-9]{2}\s+[A-Z]{3,9}\s+[0-9]{4})/i);
+    if (dobMatch) extractedDob = dobMatch[1].trim();
+  }
+
+  if (!extractedExpiry) {
+    const expMatch = utf8String.match(/(?:Date\s*of\s*Expiry|Date\s*d'expiration)[\s\:\/]*([0-9]{4}[-\/][0-9]{2}[-\/][0-9]{2}|[0-9]{2}\s+[A-Z]{3,9}\s+[0-9]{4})/i);
+    if (expMatch) extractedExpiry = expMatch[1].trim();
+  }
+
+  const confidenceScore = extractedDocNum && extractedFullName ? 85 : (extractedDocNum ? 60 : 0);
 
   return {
     documentNumber: extractedDocNum,
@@ -515,7 +509,7 @@ export function extractOpticalAndSpecimenData(
     tamperingScore: detectedTamperingScore,
     tamperingReasons: detectedTamperingReasons,
     documentType: detectedDocType,
-    ocrConfidence: extractedDocNum ? 95 : 60,
+    ocrConfidence: confidenceScore,
   };
 }
 
@@ -559,7 +553,11 @@ export async function executeVerificationPipeline(
   const sharp = await getSharp();
   if (sharp) {
     try {
-      orientedBuffer = await sharp(docBuffer).rotate().toBuffer();
+      orientedBuffer = await sharp(docBuffer)
+        .rotate()
+        .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: 88 })
+        .toBuffer();
       const meta = await sharp(orientedBuffer).metadata();
       width = meta.width || 800;
       height = meta.height || 600;
@@ -745,7 +743,7 @@ Return pure JSON only using this structure:
   "tampering_notes": []
 }`;
 
-    const candidateModels = ['gemini-3.6-flash', 'gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
+    const candidateModels = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
     for (const modelName of candidateModels) {
       try {
         const aiPromise = gemini.models.generateContent({
@@ -759,9 +757,8 @@ Return pure JSON only using this structure:
           config: { responseMimeType: 'application/json' },
         });
 
-        // 12-second timeout per model candidate for snappy execution
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI generation timeout')), 12000));
-        const aiResponse = (await Promise.race([aiPromise, timeoutPromise])) as any;
+        // 35-second timeout per model candidate for resilient execution
+        const aiResponse = (await withTimeout(aiPromise, 35000, 'AI generation timeout')) as any;
 
         if (aiResponse?.text) {
           const cleanJson = aiResponse.text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/i, '');
@@ -810,8 +807,13 @@ Return pure JSON only using this structure:
           ocrConfidence = applicantName && documentNumber ? 95 : 65;
           break;
         }
-      } catch (gemErr) {
-        console.warn(`[Gemini] Model ${modelName} attempt warning:`, gemErr);
+      } catch (gemErr: any) {
+        const errMsg = gemErr?.message || String(gemErr);
+        if (errMsg.includes('503') || errMsg.includes('high demand') || errMsg.includes('UNAVAILABLE') || errMsg.includes('timeout')) {
+          console.log(`[Gemini] Model ${modelName} unavailable/timed out (${errMsg.slice(0, 80)}), trying next candidate...`);
+        } else {
+          console.warn(`[Gemini] Model ${modelName} notice:`, errMsg.slice(0, 100));
+        }
       }
     }
   }
@@ -1489,6 +1491,16 @@ Return pure JSON only using this structure:
       tampering_detected: tamperingDetected,
       tampering_score: tamperingScore,
       regions: tamperingReasons,
+    },
+    debug: {
+      uploaded_file: docOriginalName,
+      file_size: docSize,
+      mime_type: docMimeType,
+      image_width: width,
+      image_height: height,
+      ocr_engine: gemini ? 'Gemini 2.5 Flash Vision' : 'Tesseract OCR / Optical Scanner',
+      ocr_text: mrzRaw || applicantName || 'Raw OCR text processed',
+      mrz: mrzLine1 && mrzLine2 ? `${mrzLine1}\n${mrzLine2}` : 'Not Detected',
     },
     uploaded_document: {
       bucket: 'verification-documents',

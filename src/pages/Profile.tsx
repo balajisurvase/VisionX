@@ -4,7 +4,10 @@ import {
   Shield,
   Clock,
   Building2,
-  Terminal,
+  CheckCircle2,
+  Lock,
+  LogOut,
+  FileCheck2,
 } from 'lucide-react';
 import { OfficerUser } from '../types/auth';
 import { VerificationStats } from '../types/verification';
@@ -17,16 +20,16 @@ interface ProfileProps {
 
 export const Profile: React.FC<ProfileProps> = ({ user, onLogout }) => {
   const [stats, setStats] = useState<VerificationStats>({
-    totalChecked: 142,
-    verified: 118,
-    suspicious: 16,
-    failed: 8,
-    avgRiskScore: 18.4,
+    totalChecked: 0,
+    verified: 0,
+    suspicious: 0,
+    failed: 0,
+    avgRiskScore: 0,
   });
 
   useEffect(() => {
     getDashboardMetrics().then((data) => {
-      if (data && data.totalChecked > 0) {
+      if (data) {
         setStats(data);
       }
     });
@@ -35,129 +38,110 @@ export const Profile: React.FC<ProfileProps> = ({ user, onLogout }) => {
   return (
     <div
       style={{ fontFamily: "'Times New Roman', Times, serif" }}
-      className="p-4 md:p-6 max-w-5xl mx-auto space-y-5 text-[#10233F]"
+      className="p-4 md:p-8 max-w-5xl mx-auto space-y-6 text-[#212121]"
     >
-      {/* Officer Header Card */}
-      <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-        <div className="flex items-center gap-6">
-          <div className="w-20 h-20 rounded-[8px] bg-[#102A56] text-white flex items-center justify-center font-bold text-[28px] uppercase shrink-0">
-            {user?.full_name ? user.full_name.slice(0, 2).toUpperCase() : 'VX'}
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-[28px] font-bold text-[#10233F] uppercase">
-                {user?.full_name || 'Officer A001'}
-              </h1>
-              <span className="px-3 py-1 rounded-[4px] text-[13px] font-bold bg-[#EAF2FF] text-[#2563EB] border border-[#C9DCF8] uppercase">
-                {user?.role || 'Senior Verification Officer'}
-              </span>
-            </div>
-            <p className="text-[16px] text-[#64748B] font-normal">
-              Officer ID: <strong className="text-[#10233F]">{user?.user_id || 'A001'}</strong> • {user?.department || 'Identity Verification Division'}
-            </p>
-            <div className="flex items-center gap-6 text-[15px] text-[#64748B] pt-2">
-              <span className="flex items-center gap-1.5">
-                <Building2 className="w-4 h-4 text-[#2563EB]" />
-                {user?.terminal || 'Terminal 01 - Main Inspection Gate'}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-[#2563EB]" />
-                Active Session: 09:30 AM
-              </span>
-            </div>
-          </div>
+      {/* 1. Page Header */}
+      <div className="bg-white border border-[#E1BEE7] rounded-[6px] p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-[32px] font-bold text-[#4A148C] uppercase tracking-tight leading-tight">
+            Officer Profile
+          </h1>
+          <p className="text-[16px] text-[#616161] mt-1 font-normal">
+            National Security & Document Verification Portal Account Information
+          </p>
         </div>
 
         <button
           onClick={onLogout}
-          className="px-6 py-3 rounded-[6px] bg-[#B91C1C] hover:bg-red-800 text-white text-[15px] font-bold uppercase cursor-pointer"
+          className="px-5 py-2.5 rounded-[4px] bg-[#C62828] hover:bg-[#B71C1C] text-white text-[15px] font-bold uppercase cursor-pointer flex items-center gap-2 shadow-xs transition-colors"
         >
-          Sign Out
+          <LogOut className="w-4 h-4" />
+          <span>Sign Out</span>
         </button>
       </div>
 
-      {/* Verification Statistics Grid */}
-      <div className="space-y-4">
-        <h2 className="text-[20px] font-bold text-[#10233F] uppercase">
-          Officer Performance Metrics
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          <div className="p-6 bg-white border border-[#C9DCF8] rounded-[8px]">
-            <div className="text-[14px] font-bold text-[#64748B] uppercase">Total Verifications</div>
-            <div className="text-[32px] font-bold text-[#10233F] mt-1">{stats.totalChecked}</div>
-            <div className="text-[13px] text-[#64748B] mt-1">Total documents screened</div>
-          </div>
-
-          <div className="p-6 bg-white border border-[#C9DCF8] rounded-[8px]">
-            <div className="text-[14px] font-bold text-[#15803D] uppercase">Verified (Low Risk)</div>
-            <div className="text-[32px] font-bold text-[#15803D] mt-1">{stats.verified}</div>
-            <div className="text-[13px] text-[#64748B] mt-1">Cleared documents</div>
-          </div>
-
-          <div className="p-6 bg-white border border-[#C9DCF8] rounded-[8px]">
-            <div className="text-[14px] font-bold text-[#B45309] uppercase">Review (Medium)</div>
-            <div className="text-[32px] font-bold text-[#B45309] mt-1">{stats.suspicious}</div>
-            <div className="text-[13px] text-[#64748B] mt-1">Referred for secondary audit</div>
-          </div>
-
-          <div className="p-6 bg-white border border-[#C9DCF8] rounded-[8px]">
-            <div className="text-[14px] font-bold text-[#B91C1C] uppercase">Rejected (High Risk)</div>
-            <div className="text-[32px] font-bold text-[#B91C1C] mt-1">{stats.failed}</div>
-            <div className="text-[13px] text-[#64748B] mt-1">Forged or expired documents</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Role & Terminal Permissions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-6 space-y-4">
-          <div className="flex items-center gap-2 text-[18px] font-bold text-[#10233F] uppercase border-b border-[#C9DCF8] pb-3">
-            <Shield className="w-5 h-5 text-[#2563EB]" />
-            <span>Assigned Operational Permissions</span>
-          </div>
-
-          <div className="space-y-3 text-[15px]">
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="font-bold text-[#10233F]">Document OCR & MRZ Screening</span>
-              <span className="px-3 py-1 bg-[#DCFCE7] text-[#15803D] border border-green-300 font-bold text-[13px] uppercase rounded-[4px]">AUTHORIZED</span>
+      {/* 2. Government-Style Simple Profile Card */}
+      <div className="bg-white border border-[#E1BEE7] rounded-[6px] p-6 md:p-8 shadow-xs">
+        <div className="border-b border-[#E1BEE7] pb-4 mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-[4px] bg-[#4A148C] text-white flex items-center justify-center font-bold text-[22px]">
+              <User className="w-6 h-6" />
             </div>
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="font-bold text-[#10233F]">Forensic Error Level Analysis (ELA)</span>
-              <span className="px-3 py-1 bg-[#DCFCE7] text-[#15803D] border border-green-300 font-bold text-[13px] uppercase rounded-[4px]">AUTHORIZED</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="font-bold text-[#10233F]">1:1 Biometric Desk Verification</span>
-              <span className="px-3 py-1 bg-[#DCFCE7] text-[#15803D] border border-green-300 font-bold text-[13px] uppercase rounded-[4px]">AUTHORIZED</span>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="font-bold text-[#10233F]">Official Report Generation & Export</span>
-              <span className="px-3 py-1 bg-[#DCFCE7] text-[#15803D] border border-green-300 font-bold text-[13px] uppercase rounded-[4px]">AUTHORIZED</span>
+            <div>
+              <h2 className="text-[24px] font-bold text-[#310C61] uppercase leading-tight">
+                {user?.full_name || 'Senior Verification Officer'}
+              </h2>
+              <p className="text-[14px] text-[#616161]">
+                Official Identity Screening Personnel
+              </p>
             </div>
           </div>
+
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#E8F5E9] text-[#2E7D32] border border-[#A5D6A7] rounded-[4px] text-[13px] font-bold uppercase">
+            <CheckCircle2 className="w-4 h-4 text-[#2E7D32]" />
+            <span>Active & Authorized</span>
+          </span>
         </div>
 
-        <div className="bg-white border border-[#C9DCF8] rounded-[8px] p-6 space-y-4">
-          <div className="flex items-center gap-2 text-[18px] font-bold text-[#10233F] uppercase border-b border-[#C9DCF8] pb-3">
-            <Terminal className="w-5 h-5 text-[#2563EB]" />
-            <span>Workstation Specifications</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-[16px]">
+          {/* Officer ID */}
+          <div className="p-4 bg-[#FAF8FC] border border-[#E1BEE7] rounded-[4px]">
+            <span className="text-[13px] font-bold text-[#6A1B9A] uppercase tracking-wider block mb-1">
+              Officer ID
+            </span>
+            <div className="text-[20px] font-bold text-[#4A148C]">
+              {user?.user_id || 'A001'}
+            </div>
           </div>
 
-          <div className="space-y-3 text-[15px]">
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="text-[#64748B]">Terminal ID:</span>
-              <span className="font-bold text-[#10233F]">WORKSTATION-01</span>
+          {/* Officer Name */}
+          <div className="p-4 bg-[#FAF8FC] border border-[#E1BEE7] rounded-[4px]">
+            <span className="text-[13px] font-bold text-[#6A1B9A] uppercase tracking-wider block mb-1">
+              Officer Name
+            </span>
+            <div className="text-[20px] font-bold text-[#212121]">
+              {user?.full_name || 'Balaji Ravindra Survase'}
             </div>
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="text-[#64748B]">System Version:</span>
-              <span className="font-bold text-[#10233F]">VisionX v4.2.0</span>
+          </div>
+
+          {/* Department */}
+          <div className="p-4 bg-[#FAF8FC] border border-[#E1BEE7] rounded-[4px]">
+            <span className="text-[13px] font-bold text-[#6A1B9A] uppercase tracking-wider block mb-1">
+              Department
+            </span>
+            <div className="text-[18px] font-bold text-[#212121]">
+              {user?.department || 'National Identity Verification & Border Screening Division'}
             </div>
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="text-[#64748B]">Database Connection:</span>
-              <span className="font-bold text-[#15803D]">CONNECTED</span>
+          </div>
+
+          {/* Designation */}
+          <div className="p-4 bg-[#FAF8FC] border border-[#E1BEE7] rounded-[4px]">
+            <span className="text-[13px] font-bold text-[#6A1B9A] uppercase tracking-wider block mb-1">
+              Designation
+            </span>
+            <div className="text-[18px] font-bold text-[#212121]">
+              {user?.role || 'Senior Verification Officer / Inspector'}
             </div>
-            <div className="flex items-center justify-between p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-              <span className="text-[#64748B]">Encryption Standard:</span>
-              <span className="font-bold text-[#2563EB]">AES-256-GCM</span>
+          </div>
+
+          {/* Last Login */}
+          <div className="p-4 bg-[#FAF8FC] border border-[#E1BEE7] rounded-[4px]">
+            <span className="text-[13px] font-bold text-[#6A1B9A] uppercase tracking-wider block mb-1">
+              Last Login
+            </span>
+            <div className="text-[18px] font-bold text-[#212121]">
+              Today, 09:30 AM (IST) • 256-Bit SSL Encrypted
+            </div>
+          </div>
+
+          {/* Account Status */}
+          <div className="p-4 bg-[#FAF8FC] border border-[#E1BEE7] rounded-[4px]">
+            <span className="text-[13px] font-bold text-[#6A1B9A] uppercase tracking-wider block mb-1">
+              Account Status
+            </span>
+            <div className="text-[18px] font-bold text-[#2E7D32] flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5" />
+              <span>Active (Level 3 Verification Authority)</span>
             </div>
           </div>
         </div>

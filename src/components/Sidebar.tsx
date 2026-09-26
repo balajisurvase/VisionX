@@ -1,22 +1,25 @@
 import React from 'react';
 import {
   LayoutDashboard,
+  Users,
+  Calendar,
+  CreditCard,
+  AlertCircle,
   ShieldCheck,
-  History,
-  FileText,
-  FolderKanban,
+  DollarSign,
+  Bell,
+  MessageSquare,
   Settings,
   LogOut,
-  Sliders,
+  Building2,
 } from 'lucide-react';
-import { OfficerUser } from '../types/auth';
+import { AuthSessionUser } from '../types/society';
 
 interface SidebarProps {
   currentPath: string;
   onNavigate: (path: string) => void;
-  user: OfficerUser | null;
+  user: AuthSessionUser | null;
   onLogout: () => void;
-  onViewLanding?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -30,62 +33,93 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Dashboard',
       path: '/dashboard',
       icon: LayoutDashboard,
+      roles: ['ADMIN', 'RESIDENT', 'SECURITY'],
     },
     {
-      label: 'New Verification',
-      path: '/verify',
+      label: 'Residents',
+      path: '/residents',
+      icon: Users,
+      roles: ['ADMIN', 'SECURITY'],
+    },
+    {
+      label: 'Amenities & Bookings',
+      path: '/bookings',
+      icon: Calendar,
+      roles: ['ADMIN', 'RESIDENT'],
+    },
+    {
+      label: 'Maintenance Billing',
+      path: '/maintenance',
+      icon: CreditCard,
+      roles: ['ADMIN', 'RESIDENT'],
+    },
+    {
+      label: 'Complaints Desk',
+      path: '/complaints',
+      icon: AlertCircle,
+      roles: ['ADMIN', 'RESIDENT'],
+    },
+    {
+      label: 'Gate & Visitors',
+      path: '/visitors',
       icon: ShieldCheck,
+      roles: ['ADMIN', 'SECURITY', 'RESIDENT'],
     },
     {
-      label: 'Documents',
-      path: '/documents',
-      icon: FolderKanban,
+      label: 'Finance Ledger',
+      path: '/finance',
+      icon: DollarSign,
+      roles: ['ADMIN'],
     },
     {
-      label: 'Verification History',
-      path: '/history',
-      icon: History,
+      label: 'Notice Board',
+      path: '/notices',
+      icon: Bell,
+      roles: ['ADMIN', 'RESIDENT', 'SECURITY'],
     },
     {
-      label: 'Demo Center',
-      path: '/demo',
-      icon: Sliders,
+      label: 'Communications',
+      path: '/communications',
+      icon: MessageSquare,
+      roles: ['ADMIN', 'RESIDENT', 'SECURITY'],
     },
     {
-      label: 'Audit Trail',
-      path: '/reports',
-      icon: FileText,
-    },
-    {
-      label: 'Settings',
+      label: 'Supabase Status',
       path: '/settings',
       icon: Settings,
+      roles: ['ADMIN', 'RESIDENT', 'SECURITY'],
     },
   ];
+
+  const allowedNavItems = mainNavItems.filter(
+    (item) => !user?.role || item.roles.includes(user.role)
+  );
 
   return (
     <aside
       style={{ fontFamily: "'Times New Roman', Times, serif" }}
-      className="w-[260px] bg-[#102A56] text-white flex flex-col h-screen shrink-0 select-none z-30 border-r border-[#1e3a6d]"
+      className="w-[250px] bg-[#310C61] text-white flex flex-col h-screen shrink-0 select-none z-30 border-r border-[#4A148C] overflow-hidden"
     >
       {/* Brand Header */}
-      <div className="p-6 border-b border-[#1e3a6d] bg-[#0c2145]">
+      <div className="p-4 border-b border-[#4A148C] bg-[#220745]">
         <div className="flex items-center gap-3">
-          <div className="w-3 h-3 bg-[#2563EB] shrink-0" />
+          <div className="w-8 h-8 rounded-[4px] bg-[#6A1B9A] text-white flex items-center justify-center font-bold shadow-xs">
+            <Building2 className="w-5 h-5" />
+          </div>
           <div>
-            <h1 className="text-[24px] font-bold tracking-tight text-white uppercase leading-none">
-              VISIONX
+            <h1 className="text-[18px] font-bold tracking-tight text-white uppercase leading-none">
+              VISI0NX
             </h1>
-            <p className="text-[12px] text-[#93C5FD] mt-1 font-normal">
-              Identity Verification Terminal
+            <p className="text-[11px] text-purple-200 mt-0.5 font-normal">
+              Smart Society Portal
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Navigation */}
-      <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-        {mainNavItems.map((item) => {
+      {/* Main Navigation - Scrollable if items exceed height */}
+      <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
+        {allowedNavItems.map((item) => {
           const isActive =
             currentPath === item.path ||
             (item.path === '/dashboard' && (currentPath === '/' || currentPath === ''));
@@ -96,49 +130,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={item.path}
               onClick={() => onNavigate(item.path)}
               id={`nav-item-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-[6px] text-[16px] font-bold cursor-pointer text-left ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-[4px] text-[13.5px] font-bold cursor-pointer text-left transition-colors ${
                 isActive
-                  ? 'bg-white text-[#102A56] border-l-4 border-l-[#2563EB]'
-                  : 'text-[#DCEBFF] hover:text-white hover:bg-[#1a386b]'
+                  ? 'bg-white text-[#4A148C] border-l-4 border-l-[#7B1FA2]'
+                  : 'text-purple-100 hover:text-white hover:bg-[#4A148C]'
               }`}
             >
               <Icon
-                className={`w-5 h-5 shrink-0 ${
-                  isActive ? 'text-[#2563EB]' : 'text-[#93C5FD]'
+                className={`w-4 h-4 shrink-0 ${
+                  isActive ? 'text-[#4A148C]' : 'text-[#CE93D8]'
                 }`}
               />
-              <span>{item.label}</span>
+              <span className="truncate">{item.label}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* Bottom Officer Account Card & Logout */}
-      <div className="p-4 border-t border-[#1e3a6d] bg-[#0c2145] space-y-3">
-        <div
-          onClick={() => onNavigate('/profile')}
-          className="p-3 rounded-[6px] bg-[#102A56] border border-[#1e3a6d] flex items-center gap-3 cursor-pointer hover:border-[#2563EB]"
-        >
-          <div className="w-9 h-9 rounded bg-[#2563EB] text-white flex items-center justify-center font-bold text-[14px] shrink-0">
-            {user?.full_name ? user.full_name.slice(0, 2).toUpperCase() : 'VX'}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-bold text-white truncate">
-              {user?.full_name || 'Officer User'}
-            </div>
-            <p className="text-[13px] text-[#93C5FD] truncate">
-              {user?.user_id || 'A001'} • Authorized Officer
-            </p>
+      {/* User Session Footer */}
+      <div className="p-3 border-t border-[#4A148C] bg-[#220745] shrink-0 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="truncate">
+            <span className="text-[13px] font-bold text-white block truncate">
+              {user?.name || 'Administrator'}
+            </span>
+            <span className="text-[11px] text-purple-200 uppercase font-bold">
+              {user?.role || 'ADMIN'} • {user?.society_id || 'SOC-PUNE-01'}
+            </span>
           </div>
         </div>
 
         <button
           onClick={onLogout}
           id="btn-sidebar-logout"
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-[6px] text-[15px] font-bold text-red-300 hover:text-white hover:bg-red-900/40 border border-red-800/40 cursor-pointer"
+          className="w-full py-1.5 px-3 bg-[#4A148C] hover:bg-[#C62828] text-white text-[12px] font-bold uppercase rounded-[3px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
         >
-          <LogOut className="w-4 h-4" />
-          <span>SIGN OUT</span>
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Sign Out</span>
         </button>
       </div>
     </aside>

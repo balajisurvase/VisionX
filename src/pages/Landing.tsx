@@ -24,48 +24,33 @@ import { loginWithUserId } from '../services/authService';
 
 interface LandingProps {
   onStartVerification: () => void;
-  onViewDemo: () => void;
-  onQuickLogin: (user: OfficerUser) => void;
+  onViewDemo?: () => void;
+  onQuickLogin?: (user: OfficerUser) => void;
 }
 
 export const Landing: React.FC<LandingProps> = ({
   onStartVerification,
-  onViewDemo,
-  onQuickLogin,
 }) => {
-  const handleQuickDemoEntry = async () => {
-    try {
-      const res = await loginWithUserId('A001', 'admin123');
-      if (res.success && res.user) {
-        onQuickLogin(res.user);
-      } else {
-        onViewDemo();
-      }
-    } catch {
-      onViewDemo();
-    }
-  };
-
   const pipelineSteps = [
     { step: '01', title: 'Document Upload', desc: 'Secure upload of Passport, ID or Visa' },
     { step: '02', title: 'Image Processing', desc: 'Noise reduction, perspective alignment & DPI boost' },
     { step: '03', title: 'OCR Extraction', desc: 'Dual-engine text & optical character recognition' },
-    { step: '04', title: 'MRZ Validation', desc: 'ICAO 9303 modulo-10 7-3-1 weight check' },
+    { step: '04', title: 'MRZ Validation', desc: 'ICAO Doc 9303 modulo-10 7-3-1 weight check' },
     { step: '05', title: 'Authenticity Analysis', desc: 'Hologram, security fonts, microprint & layout' },
-    { step: '06', title: 'Tampering Detection', desc: 'OpenCV ELA, photo splicing & font glyph audit' },
+    { step: '06', title: 'Tampering Detection', desc: 'Error Level Analysis (ELA), photo splicing & font glyph audit' },
     { step: '07', title: 'Face Verification', desc: '1:1 facial biometric matching & liveness check' },
     { step: '08', title: 'Risk Engine', desc: 'Multi-factor threat score & final decision' },
   ];
 
   const techStack = [
-    { name: 'OpenCV', category: 'Computer Vision', desc: 'Error Level Analysis (ELA) and edge artifact detection for tampering identification.' },
-    { name: 'OCR Engine', category: 'Text Extraction', desc: 'PaddleOCR / Gemini Vision fallback extracting structured VIZ metadata.' },
-    { name: 'MRZ / ICAO 9303', category: 'Standards Compliance', desc: 'Mathematical modulo 10 checksum validation on 2-line & 3-line travel documents.' },
+    { name: 'Computer Vision', category: 'Forensics', desc: 'Error Level Analysis (ELA) and edge artifact detection for tampering identification.' },
+    { name: 'OCR Engine', category: 'Text Extraction', desc: 'Neural vision and high-accuracy optical character recognition extracting structured VIZ metadata.' },
+    { name: 'MRZ Standard', category: 'Standards Compliance', desc: 'Mathematical modulo 10 checksum validation on 2-line & 3-line travel documents.' },
     { name: 'Document Analysis', category: 'Forensics', desc: 'Layout geometry, font regularity, expiry timeline and cross-field consistency.' },
     { name: 'Face Verification', category: 'Biometrics', desc: 'Cosine similarity matching between document photo & live desk capture.' },
     { name: 'Risk Scoring Engine', category: 'Threat Modeling', desc: 'Weighted algorithm returning 0–100 threat score categorized into Low, Medium, High.' },
-    { name: 'Supabase', category: 'Database & Auth', desc: 'PostgreSQL relational schemas, Auth policies, and encrypted document storage.' },
-    { name: 'Node.js / FastAPI', category: 'Backend Runtime', desc: 'High-throughput microservices architecture powering real-time verification.' },
+    { name: 'Cryptographic Ledger', category: 'Audit Trail', desc: 'Relational schemas, cryptographic hashes, and tamper-evident document storage.' },
+    { name: 'Security Architecture', category: 'Backend Runtime', desc: 'High-throughput sovereign architecture powering real-time verification.' },
   ];
 
   return (
@@ -79,23 +64,13 @@ export const Landing: React.FC<LandingProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base tracking-tight text-white">IdentityGuard AI</span>
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                  SIH 2026
-                </span>
+                <span className="font-extrabold text-base tracking-tight text-white">Visi0nx</span>
               </div>
-              <p className="text-[11px] text-slate-400">AI-Powered Identity & Document Screening</p>
+              <p className="text-[11px] text-slate-400">Identity & Document Verification System</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleQuickDemoEntry}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
-            >
-              <Terminal className="w-3.5 h-3.5 text-blue-400" />
-              <span>Demo Login</span>
-            </button>
             <button
               onClick={onStartVerification}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md shadow-blue-600/30 transition-all cursor-pointer"
@@ -130,19 +105,12 @@ export const Landing: React.FC<LandingProps> = ({
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <button
-              onClick={handleQuickDemoEntry}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all cursor-pointer"
+              onClick={onStartVerification}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all cursor-pointer"
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>Start Verification</span>
+              <span>Officer Terminal Access</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleQuickDemoEntry}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-700 text-slate-200 font-semibold text-sm transition-all cursor-pointer"
-            >
-              <Activity className="w-4 h-4 text-blue-400" />
-              <span>View Interactive Demo</span>
             </button>
           </div>
 
@@ -338,7 +306,7 @@ export const Landing: React.FC<LandingProps> = ({
 
         <div className="flex items-center justify-center gap-4">
           <button
-            onClick={handleQuickDemoEntry}
+            onClick={onStartVerification}
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-lg shadow-blue-600/30 transition-all cursor-pointer"
           >
             <span>Launch Officer Console</span>

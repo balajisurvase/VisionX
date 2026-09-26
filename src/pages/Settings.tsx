@@ -22,7 +22,7 @@ interface SettingsProps {
   onLogout: () => void;
 }
 
-const SUPABASE_SCHEMA_SQL = `-- VisionX Database Schema
+const SUPABASE_SCHEMA_SQL = `-- Visi0nx Database Schema
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username VARCHAR(100) UNIQUE,
@@ -336,7 +336,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onLogout }) => {
 
             <div className="p-6 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[8px] space-y-2">
               <span className="text-[13px] font-bold text-[#2563EB] uppercase block">Secondary Model</span>
-              <h3 className="text-[20px] font-bold text-[#10233F]">OpenCV Forensic Engine</h3>
+              <h3 className="text-[20px] font-bold text-[#10233F]">Sovereign Forensic Substrate Engine</h3>
               <p className="text-[#64748B] text-[15px]">Digital Tampering & Error Level Analysis (ELA)</p>
               <div className="pt-2 font-bold text-[#15803D]">Status: ONLINE</div>
             </div>

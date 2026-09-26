@@ -2,11 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
   Loader2,
   Check,
-  ShieldCheck,
-  Scan,
-  UserCheck,
-  Database,
-  FileText,
 } from 'lucide-react';
 
 interface VerificationProgressBarProps {
@@ -17,12 +12,11 @@ interface VerificationProgressBarProps {
   isReady?: boolean;
 }
 
-interface StepItem {
+interface VerificationCheckItem {
   id: string;
   title: string;
   detail: string;
-  icon: React.ComponentType<{ className?: string }>;
-  targetPercent: number;
+  threshold: number;
 }
 
 export const VerificationProgressBar: React.FC<VerificationProgressBarProps> = ({
@@ -33,7 +27,7 @@ export const VerificationProgressBar: React.FC<VerificationProgressBarProps> = (
   onComplete,
 }) => {
   const [percent, setPercent] = useState<number>(10);
-  const [currentStatusMsg, setCurrentStatusMsg] = useState<string>('Initializing optical scan & data extraction...');
+  const [currentStatusMsg, setCurrentStatusMsg] = useState<string>('Processing document...');
 
   const isReadyRef = useRef(isReady);
   const onCompleteRef = useRef(onComplete);
@@ -47,41 +41,49 @@ export const VerificationProgressBar: React.FC<VerificationProgressBarProps> = (
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  const steps: StepItem[] = [
+  const checks: VerificationCheckItem[] = [
     {
-      id: 'ocr',
-      title: 'OCR & MRZ Extraction',
-      detail: 'Extracting ICAO lines, name, date of birth & document number',
-      icon: Scan,
-      targetPercent: 28,
+      id: 'processing',
+      title: 'Document Processing',
+      detail: 'Image ingestion, orientation correction, and boundary alignment',
+      threshold: 18,
     },
     {
-      id: 'forensics',
-      title: 'Substrate & Forensic Analysis',
-      detail: 'Analyzing digital substrate, compression artifacts & UV layers',
-      icon: ShieldCheck,
-      targetPercent: 55,
+      id: 'ocr',
+      title: 'OCR Data Extraction',
+      detail: 'Extracting Visual Inspection Zone (VIZ) text and fields',
+      threshold: 36,
+    },
+    {
+      id: 'mrz',
+      title: 'MRZ Validation',
+      detail: 'ICAO Doc 9303 Modulo-10 checksum and check-digit validation',
+      threshold: 54,
+    },
+    {
+      id: 'database',
+      title: 'Database Verification',
+      detail: 'Verifying identity credentials against national database catalog',
+      threshold: 72,
     },
     {
       id: 'biometrics',
-      title: 'Facial Biometric Matching',
-      detail: 'Comparing document portrait with biometric photo',
-      icon: UserCheck,
-      targetPercent: 82,
+      title: 'Biometric Verification',
+      detail: '1:1 facial biometric matching of document portrait and traveler',
+      threshold: 88,
     },
     {
-      id: 'clearance',
-      title: 'Database Registry Clearance',
-      detail: 'Checking record clearance against national border database',
-      icon: Database,
-      targetPercent: 99,
+      id: 'forensics',
+      title: 'Forensic Analysis',
+      detail: 'Digital substrate tampering, Error Level Analysis (ELA), and structure inspection',
+      threshold: 99,
     },
   ];
 
   useEffect(() => {
     isCompletedRef.current = false;
     const startTime = Date.now();
-    const duration = 3200; // Normal, responsive ~3.2s duration
+    const duration = 2600;
 
     const checkAndFinish = () => {
       if (isCompletedRef.current) return;
@@ -91,7 +93,7 @@ export const VerificationProgressBar: React.FC<VerificationProgressBarProps> = (
           if (onCompleteRef.current) {
             onCompleteRef.current();
           }
-        }, 300);
+        }, 200);
       } else {
         const pollInterval = setInterval(() => {
           if (isReadyRef.current && !isCompletedRef.current) {
@@ -101,7 +103,7 @@ export const VerificationProgressBar: React.FC<VerificationProgressBarProps> = (
               if (onCompleteRef.current) {
                 onCompleteRef.current();
               }
-            }, 300);
+            }, 200);
           }
         }, 100);
       }
@@ -113,16 +115,18 @@ export const VerificationProgressBar: React.FC<VerificationProgressBarProps> = (
       const currentVal = Math.min(99, Math.floor(10 + progress * 89));
       setPercent(currentVal);
 
-      if (currentVal < 28) {
-        setCurrentStatusMsg('Extracting document MRZ checksums and text fields...');
-      } else if (currentVal < 55) {
-        setCurrentStatusMsg('Running digital forensic substrate and tampering checks...');
-      } else if (currentVal < 82) {
-        setCurrentStatusMsg('Matching facial biometrics and verifying portrait similarity...');
-      } else if (currentVal < 99) {
-        setCurrentStatusMsg('Querying sovereign database & verifying clearance...');
+      if (currentVal < 18) {
+        setCurrentStatusMsg('Document Processing in progress...');
+      } else if (currentVal < 36) {
+        setCurrentStatusMsg('OCR Data Extraction in progress...');
+      } else if (currentVal < 54) {
+        setCurrentStatusMsg('MRZ Validation in progress...');
+      } else if (currentVal < 72) {
+        setCurrentStatusMsg('Database Verification in progress...');
+      } else if (currentVal < 88) {
+        setCurrentStatusMsg('Biometric Verification in progress...');
       } else {
-        setCurrentStatusMsg('Finalizing inspection report...');
+        setCurrentStatusMsg('Forensic Analysis in progress...');
       }
 
       if (progress >= 1) {
@@ -135,150 +139,100 @@ export const VerificationProgressBar: React.FC<VerificationProgressBarProps> = (
   }, []);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs space-y-6 max-w-4xl mx-auto">
+    <div
+      style={{ fontFamily: "'Times New Roman', Times, serif" }}
+      className="bg-white border border-[#E1BEE7] rounded-[6px] p-5 sm:p-6 shadow-xs max-w-3xl mx-auto space-y-5"
+    >
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
-            <Loader2 className="w-5 h-5 animate-spin" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">
-              Verifying Document & Credentials
-            </h3>
-            <p className="text-xs text-slate-500">
-              Analyzing {documentType || 'Travel Document'} • Real-Time Border Check
-            </p>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E1BEE7] pb-3.5">
+        <div>
+          <h3 className="text-[22px] font-bold text-[#4A148C] uppercase">
+            Verification in Progress
+          </h3>
+          <p className="text-[13px] text-[#616161]">
+            Official Government Screening • {documentType || 'Identity Document'}
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg self-start sm:self-auto">
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-          <span className="text-sm font-mono font-bold text-blue-700">
+        <div className="flex items-center gap-2 bg-[#F3E5F5] border border-[#E1BEE7] px-3 py-1 rounded-[4px]">
+          <span className="w-2.5 h-2.5 rounded-full bg-[#4A148C] animate-pulse" />
+          <span className="text-[13px] font-bold text-[#4A148C]">
             {percent}% Completed
           </span>
         </div>
       </div>
 
-      {/* Optional Document / Photo Preview Thumbnails */}
-      {(previewUrl || personPreviewUrl) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200/80">
-          {previewUrl && (
-            <div className="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
-              <div className="w-16 h-12 bg-slate-100 rounded overflow-hidden flex items-center justify-center shrink-0 border border-slate-200">
-                <img src={previewUrl} alt="Document" className="w-full h-full object-cover" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">DOCUMENT SUBSTRATE</span>
-                <span className="text-xs font-semibold text-slate-800 truncate block">{documentType}</span>
-              </div>
-            </div>
-          )}
-
-          {personPreviewUrl && (
-            <div className="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
-              <div className="w-16 h-12 bg-slate-100 rounded overflow-hidden flex items-center justify-center shrink-0 border border-slate-200">
-                <img src={personPreviewUrl} alt="Person" className="w-full h-full object-cover" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">BIOMETRIC SUBJECT</span>
-                <span className="text-xs font-semibold text-slate-800 truncate block">Live Capture Verified</span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Progress Bar & Status Text */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-medium text-slate-600">
-          <span className="flex items-center gap-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 shrink-0" />
-            <span className="truncate">{currentStatusMsg}</span>
-          </span>
-          <span className="font-mono text-blue-700 font-bold shrink-0">{percent}%</span>
-        </div>
-
-        <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+      {/* Progress Bar */}
+      <div className="space-y-1">
+        <div className="h-2 w-full bg-[#F3E5F5] rounded-full overflow-hidden border border-[#E1BEE7]">
           <div
-            className="h-full bg-blue-600 rounded-full transition-all duration-300 ease-out"
+            className="h-full bg-[#4A148C] transition-all duration-150"
             style={{ width: `${percent}%` }}
           />
         </div>
+        <div className="text-[11px] font-bold text-[#6A1B9A] uppercase tracking-wider text-right">
+          {currentStatusMsg}
+        </div>
       </div>
 
-      {/* Steps List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-        {steps.map((step) => {
-          const isDone = percent >= step.targetPercent;
-          const isCurrent =
-            percent < step.targetPercent &&
-            (step.targetPercent === 28 || percent >= step.targetPercent - 28);
-          const IconComponent = step.icon;
+      {/* Vertical Verification Status Section */}
+      <div className="space-y-2.5 pt-1">
+        {checks.map((item, idx) => {
+          const isCompleted = percent >= item.threshold;
+          const isProcessing = !isCompleted && (idx === 0 || percent >= checks[idx - 1].threshold);
+          const isPending = !isCompleted && !isProcessing;
 
           return (
             <div
-              key={step.id}
-              className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
-                isDone
-                  ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
-                  : isCurrent
-                  ? 'bg-blue-50/70 border-blue-200 text-blue-950 ring-1 ring-blue-300'
-                  : 'bg-slate-50/60 border-slate-200 text-slate-400'
+              key={item.id}
+              className={`p-3 rounded-[4px] border flex items-center justify-between transition-colors ${
+                isCompleted
+                  ? 'bg-[#E8F5E9] border-[#A5D6A7] text-[#2E7D32]'
+                  : isProcessing
+                  ? 'bg-[#F3E5F5] border-[#BA68C8] text-[#4A148C]'
+                  : 'bg-[#FAF8FC] border-[#E1BEE7] text-[#757575]'
               }`}
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3">
                 <div
-                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 font-bold transition-all ${
-                    isDone
-                      ? 'bg-emerald-600 text-white'
-                      : isCurrent
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-200 text-slate-500'
+                  className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[12px] shrink-0 ${
+                    isCompleted
+                      ? 'bg-[#2E7D32] text-white'
+                      : isProcessing
+                      ? 'bg-[#4A148C] text-white'
+                      : 'bg-[#E1BEE7] text-[#757575]'
                   }`}
                 >
-                  {isDone ? (
-                    <Check className="w-4 h-4 stroke-[3]" />
-                  ) : isCurrent ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                  {isCompleted ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : isProcessing ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <IconComponent className="w-3.5 h-3.5" />
+                    <span>{idx + 1}</span>
                   )}
                 </div>
 
-                <div className="min-w-0">
-                  <span
-                    className={`font-semibold text-xs block truncate ${
-                      isDone
-                        ? 'text-slate-900'
-                        : isCurrent
-                        ? 'text-blue-900'
-                        : 'text-slate-500'
-                    }`}
-                  >
-                    {step.title}
-                  </span>
-                  <span className="text-[11px] text-slate-500 block truncate">
-                    {step.detail}
-                  </span>
+                <div>
+                  <div className="text-[14px] font-bold">
+                    {item.title}
+                  </div>
+                  <div className="text-[11px] opacity-85">
+                    {item.detail}
+                  </div>
                 </div>
               </div>
 
-              <div className="shrink-0 ml-2">
-                {isDone ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    PASSED
-                  </span>
-                ) : isCurrent ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
-                    Running...
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-400">
-                    Queued
-                  </span>
-                )}
-              </div>
+              <span
+                className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded-[3px] border ${
+                  isCompleted
+                    ? 'bg-white border-[#A5D6A7] text-[#2E7D32]'
+                    : isProcessing
+                    ? 'bg-white border-[#BA68C8] text-[#4A148C]'
+                    : 'bg-white border-[#E1BEE7] text-[#757575]'
+                }`}
+              >
+                {isCompleted ? '✓ Completed' : isProcessing ? 'Processing...' : 'Pending'}
+              </span>
             </div>
           );
         })}

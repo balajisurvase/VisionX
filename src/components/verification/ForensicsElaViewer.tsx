@@ -35,7 +35,7 @@ export const ForensicsElaViewer: React.FC<ForensicsElaViewerProps> = ({ record }
               Digital Image Forensics & Substrate Tampering Suite
             </h3>
             <span className="text-[11px] text-slate-500 font-medium">
-              OpenCV Error Level Analysis (ELA) • Photo Splice Scanner • Font Glyph Kerning
+              Error Level Analysis (ELA) • Photo Splice Scanner • Font Glyph Kerning
             </span>
           </div>
         </div>
@@ -125,7 +125,7 @@ export const ForensicsElaViewer: React.FC<ForensicsElaViewerProps> = ({ record }
             {/* Visual ELA Simulation Display */}
             <div className="bg-[#0B1220] rounded-xl p-4 border border-gray-200 aspect-[4/3] flex flex-col justify-between relative overflow-hidden shadow-inner">
               <div className="flex items-center justify-between text-[10px] font-mono text-gray-400 z-10">
-                <span>OPENCV ELA RESIDUAL DELTA</span>
+                <span>FORENSIC ELA RESIDUAL DELTA</span>
                 <span className="text-amber-400 font-bold">95% JPEG RESAVE</span>
               </div>
 

@@ -1,23 +1,13 @@
 /// <reference types="vite/client" />
 import { createClient } from '@supabase/supabase-js';
-import {
-  DbUser,
-  DbVerificationRequest,
-  DbVerificationMedia,
-  DbExtractedData,
-  DbVerificationCheck,
-  DbVerificationResult,
-  DbVerificationLog,
-  SUPABASE_STORAGE_BUCKETS,
-} from '../types/supabase';
 
 // Read from Vite environment variables
 const envUrl = (import.meta.env.VITE_SUPABASE_URL as string) || '';
 const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
 
 // Support local storage configuration for live app testing
-const localUrl = typeof window !== 'undefined' ? localStorage.getItem('VERIDOC_SUPABASE_URL') || '' : '';
-const localKey = typeof window !== 'undefined' ? localStorage.getItem('VERIDOC_SUPABASE_ANON_KEY') || '' : '';
+const localUrl = typeof window !== 'undefined' ? localStorage.getItem('SOCIETY_SUPABASE_URL') || '' : '';
+const localKey = typeof window !== 'undefined' ? localStorage.getItem('SOCIETY_SUPABASE_ANON_KEY') || '' : '';
 
 export const supabaseUrl = envUrl || localUrl;
 export const supabaseAnonKey = envKey || localKey;
@@ -38,10 +28,10 @@ export async function saveSupabaseCredentials(url: string, key: string) {
   const cleanUrl = url.trim();
   const cleanKey = key.trim();
   if (typeof window !== 'undefined') {
-    localStorage.setItem('VERIDOC_SUPABASE_URL', cleanUrl);
-    localStorage.setItem('VERIDOC_SUPABASE_ANON_KEY', cleanKey);
+    localStorage.setItem('SOCIETY_SUPABASE_URL', cleanUrl);
+    localStorage.setItem('SOCIETY_SUPABASE_ANON_KEY', cleanKey);
   }
-  // Sync with backend
+  // Also sync to backend proxy if available
   try {
     await fetch('/api/settings/supabase', {
       method: 'POST',
@@ -56,8 +46,8 @@ export async function saveSupabaseCredentials(url: string, key: string) {
 
 export async function clearSupabaseCredentials() {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('VERIDOC_SUPABASE_URL');
-    localStorage.removeItem('VERIDOC_SUPABASE_ANON_KEY');
+    localStorage.removeItem('SOCIETY_SUPABASE_URL');
+    localStorage.removeItem('SOCIETY_SUPABASE_ANON_KEY');
   }
   try {
     await fetch('/api/settings/supabase', {
@@ -72,16 +62,19 @@ export async function clearSupabaseCredentials() {
 }
 
 /**
- * 7 Tables Metadata
+ * Metadata for all 12 Supabase Tables
  */
-export const SUPABASE_TABLES = [
-  { name: 'users', description: 'Officers and System Users', icon: 'Shield' },
-  { name: 'verification_requests', description: 'Document Screening Requests', icon: 'FileText' },
-  { name: 'verification_media', description: 'Uploaded Document & Biometric Media', icon: 'Image' },
-  { name: 'extracted_data', description: 'PaddleOCR Extracted Identity Fields', icon: 'ScanLine' },
-  { name: 'verification_checks', description: 'Individual Forensic & Biometric Checks', icon: 'CheckCircle2' },
-  { name: 'verification_results', description: 'Final Risk Scores, Status & Rationale', icon: 'Award' },
-  { name: 'verification_logs', description: 'Audit & Stage Processing Progress', icon: 'Activity' },
+export const SOCIETY_TABLES = [
+  { name: 'admin', description: 'Admin & Society Management Officers', icon: 'Shield' },
+  { name: 'resident', description: 'Resident Directory (Owners & Tenants)', icon: 'Users' },
+  { name: 'booking', description: 'Facility & Amenity Bookings', icon: 'Calendar' },
+  { name: 'amenities', description: 'Society Amenities & Rates', icon: 'Sparkles' },
+  { name: 'maintenance', description: 'Maintenance Dues & Payments', icon: 'Receipt' },
+  { name: 'complaint', description: 'Grievances & Helpdesk Complaints', icon: 'AlertCircle' },
+  { name: 'media', description: 'Complaint Attachments & Documents', icon: 'Image' },
+  { name: 'visitors', description: 'Visitor Entry & Gate Logs', icon: 'UserCheck' },
+  { name: 'security', description: 'Security Personnel & Shifts', icon: 'Lock' },
+  { name: 'finance', description: 'Society Income & Expense Ledger', icon: 'DollarSign' },
+  { name: 'notices', description: 'Broadcast Bulletins & Notices', icon: 'Bell' },
+  { name: 'communications', description: 'Instant Messages & Helpdesk Chat', icon: 'MessageSquare' },
 ] as const;
-
-export { SUPABASE_STORAGE_BUCKETS };

@@ -25,7 +25,7 @@ export const API_ENDPOINTS = {
     status: `${API_BASE_URL}/api/gemini/status`,
     explain: `${API_BASE_URL}/api/gemini/explain`,
   },
-  // Verification Pipeline (OpenCV + PaddleOCR + MRZ + Face + Risk Engine)
+  // Verification Pipeline (AI Vision + Forensics + MRZ + Biometrics + Risk Engine)
   verify: `${API_BASE_URL}/api/verify`,
   verification: {
     screen: `${API_BASE_URL}/api/verification/screen`,

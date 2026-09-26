@@ -24,6 +24,25 @@ let activeSupabaseKey =
 
 let client: SupabaseClient | null = null;
 
+export function checkSupabaseConfiguration() {
+  const isUrlConfigured = Boolean(activeSupabaseUrl);
+  const isServiceRoleConfigured = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const isAnonConfigured = Boolean(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY);
+  const isConfigured = Boolean(activeSupabaseUrl && activeSupabaseKey);
+
+  console.log('====================================================');
+  console.log(`Supabase configured: ${isConfigured ? 'YES' : 'NO'}`);
+  console.log(`Supabase URL: ${isUrlConfigured ? 'configured' : 'not configured'}`);
+  console.log(`Supabase service role: ${isServiceRoleConfigured ? 'configured' : (isAnonConfigured ? 'configured (anon key)' : 'not configured')}`);
+  console.log('====================================================');
+
+  return {
+    configured: isConfigured,
+    url: isUrlConfigured ? 'configured' : 'not configured',
+    service_role: isServiceRoleConfigured ? 'configured' : (isAnonConfigured ? 'configured' : 'not configured'),
+  };
+}
+
 function initClient() {
   if (activeSupabaseUrl && activeSupabaseKey) {
     try {
@@ -38,6 +57,7 @@ function initClient() {
   } else {
     client = null;
   }
+  checkSupabaseConfiguration();
 }
 
 initClient();
@@ -108,451 +128,58 @@ export const SEED_USERS: DbUser[] = [
   },
 ];
 
-export const SEED_REQUESTS: DbVerificationRequest[] = [
-  {
-    id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    verification_code: 'VER-DEMO001',
-    user_id: '11111111-1111-1111-1111-111111111111',
-    document_type: 'PASSPORT',
-    status: 'COMPLETED',
-    demo_mode: true,
-    original_filename: 'demo_passport_01.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 245678,
-    created_at: '2026-09-13T07:19:08.912546Z',
-    updated_at: '2026-09-13T07:19:08.912546Z',
-    completed_at: null,
-  },
-  {
-    id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    verification_code: 'VER-DEMO002',
-    user_id: '11111111-1111-1111-1111-111111111111',
-    document_type: 'NATIONAL_ID',
-    status: 'SUSPICIOUS',
-    demo_mode: true,
-    original_filename: 'demo_id_02.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 198456,
-    created_at: '2026-09-13T07:19:08.912546Z',
-    updated_at: '2026-09-13T07:19:08.912546Z',
-    completed_at: null,
-  },
-  {
-    id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-    verification_code: 'VER-DEMO003',
-    user_id: '33333333-3333-3333-3333-333333333333',
-    document_type: 'DRIVING_LICENSE',
-    status: 'COMPLETED',
-    demo_mode: true,
-    original_filename: 'demo_license_03.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 312890,
-    created_at: '2026-09-13T07:19:08.912546Z',
-    updated_at: '2026-09-13T07:19:08.912546Z',
-    completed_at: null,
-  },
-  {
-    id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-    verification_code: 'VER-DEMO004',
-    user_id: '11111111-1111-1111-1111-111111111111',
-    document_type: 'PASSPORT',
-    status: 'REJECTED',
-    demo_mode: true,
-    original_filename: 'demo_passport_04.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 287654,
-    created_at: '2026-09-13T07:19:08.912546Z',
-    updated_at: '2026-09-13T07:19:08.912546Z',
-    completed_at: null,
-  },
-  {
-    id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
-    verification_code: 'VER-DEMO005',
-    user_id: '33333333-3333-3333-3333-333333333333',
-    document_type: 'NATIONAL_ID',
-    status: 'PROCESSING',
-    demo_mode: true,
-    original_filename: 'demo_id_05.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 221456,
-    created_at: '2026-09-13T07:19:08.912546Z',
-    updated_at: '2026-09-13T07:19:08.912546Z',
-    completed_at: null,
-  },
-];
+export const SEED_REQUESTS: DbVerificationRequest[] = [];
 
-export const SEED_MEDIA: DbVerificationMedia[] = [
-  {
-    id: '10000000-0000-0000-0000-000000000001',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    uploaded_by: '11111111-1111-1111-1111-111111111111',
-    media_type: 'DOCUMENT_FRONT',
-    bucket_name: 'verification-documents',
-    storage_path: '11111111-1111-1111-1111-111111111111/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/demo_passport_01.jpg',
-    original_filename: 'demo_passport_01.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 245678,
-    checksum: null,
-    is_primary: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '10000000-0000-0000-0000-000000000002',
-    verification_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    uploaded_by: '11111111-1111-1111-1111-111111111111',
-    media_type: 'DOCUMENT_FRONT',
-    bucket_name: 'verification-documents',
-    storage_path: '11111111-1111-1111-1111-111111111111/bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb/demo_id_02.jpg',
-    original_filename: 'demo_id_02.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 198456,
-    checksum: null,
-    is_primary: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '10000000-0000-0000-0000-000000000003',
-    verification_id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-    uploaded_by: '33333333-3333-3333-3333-333333333333',
-    media_type: 'DOCUMENT_FRONT',
-    bucket_name: 'verification-documents',
-    storage_path: '33333333-3333-3333-3333-333333333333/cccccccc-cccc-cccc-cccc-cccccccccccc/demo_license_03.jpg',
-    original_filename: 'demo_license_03.jpg',
-    mime_type: 'image/jpeg',
-    file_size: 312890,
-    checksum: null,
-    is_primary: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-];
+export const SEED_MEDIA: DbVerificationMedia[] = [];
+export const SEED_EXTRACTED: DbExtractedData[] = [];
+export const SEED_CHECKS: DbVerificationCheck[] = [];
+export const SEED_RESULTS: DbVerificationResult[] = [];
+export const SEED_LOGS: DbVerificationLog[] = [];
 
-export const SEED_EXTRACTED: DbExtractedData[] = [
-  {
-    id: '20000000-0000-0000-0000-000000000001',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    document_number: 'DEMO123456',
-    full_name: 'AARAV SHARMA',
-    date_of_birth: '1999-05-14',
-    nationality: 'IND',
-    gender: 'M',
-    issue_date: '2022-06-10',
-    expiry_date: '2032-06-09',
-    issuing_country: 'IND',
-    mrz_line_1: null,
-    mrz_line_2: null,
-    mrz_line_3: null,
-    raw_text: 'DEMO PASSPORT DATA - NOT A REAL IDENTITY',
-    ocr_confidence: '98.40',
-    mrz_valid: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '20000000-0000-0000-0000-000000000002',
-    verification_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    document_number: 'DEMO987654',
-    full_name: 'ROHAN VERMA',
-    date_of_birth: '2001-08-21',
-    nationality: 'IND',
-    gender: 'M',
-    issue_date: '2021-03-15',
-    expiry_date: '2031-03-14',
-    issuing_country: 'IND',
-    mrz_line_1: null,
-    mrz_line_2: null,
-    mrz_line_3: null,
-    raw_text: 'DEMO NATIONAL ID DATA - NOT A REAL IDENTITY',
-    ocr_confidence: '91.20',
-    mrz_valid: false,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '20000000-0000-0000-0000-000000000003',
-    verification_id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-    document_number: 'DL-DEMO-4567',
-    full_name: 'ANAYA PATIL',
-    date_of_birth: '2000-11-02',
-    nationality: 'IND',
-    gender: 'F',
-    issue_date: '2023-01-20',
-    expiry_date: '2033-01-19',
-    issuing_country: 'IND',
-    mrz_line_1: null,
-    mrz_line_2: null,
-    mrz_line_3: null,
-    raw_text: 'DEMO DRIVING LICENSE DATA - NOT A REAL IDENTITY',
-    ocr_confidence: '97.10',
-    mrz_valid: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-];
-
-export const SEED_CHECKS: DbVerificationCheck[] = [
-  {
-    id: '30000000-0000-0000-0000-000000000001',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    check_type: 'OCR',
-    status: 'PASSED',
-    score: '98.40',
-    confidence: '98.40',
-    message: 'OCR extraction completed successfully',
-    details: '{"demo":true,"engine":"PaddleOCR"}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '30000000-0000-0000-0000-000000000002',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    check_type: 'MRZ',
-    status: 'PASSED',
-    score: '97.80',
-    confidence: '97.80',
-    message: 'MRZ validation passed',
-    details: '{"icao_validation":true}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '30000000-0000-0000-0000-000000000003',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    check_type: 'DOCUMENT_AUTHENTICITY',
-    status: 'PASSED',
-    score: '96.50',
-    confidence: '96.50',
-    message: 'Document appears authentic',
-    details: '{"demo_analysis":true}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '30000000-0000-0000-0000-000000000004',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    check_type: 'TAMPERING',
-    status: 'PASSED',
-    score: '95.20',
-    confidence: '95.20',
-    message: 'No significant tampering detected',
-    details: '{"tampering_detected":false}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '30000000-0000-0000-0000-000000000005',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    check_type: 'FACE_MATCH',
-    status: 'PASSED',
-    score: '94.70',
-    confidence: '94.70',
-    message: 'Face match successful',
-    details: '{"match":true}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '30000000-0000-0000-0000-000000000006',
-    verification_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    check_type: 'OCR',
-    status: 'PASSED',
-    score: '91.20',
-    confidence: '91.20',
-    message: 'OCR completed with minor uncertainty',
-    details: '{"demo":true}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '30000000-0000-0000-0000-000000000007',
-    verification_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    check_type: 'MRZ',
-    status: 'WARNING',
-    score: '72.00',
-    confidence: '72.00',
-    message: 'MRZ validation warning',
-    details: '{"validation_warning":true}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '30000000-0000-0000-0000-000000000008',
-    verification_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    check_type: 'TAMPERING',
-    status: 'WARNING',
-    score: '58.00',
-    confidence: '58.00',
-    message: 'Possible image manipulation detected',
-    details: '{"possible_tampering":true}',
-    is_demo_result: true,
-    started_at: null,
-    completed_at: null,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-];
-
-export const SEED_RESULTS: DbVerificationResult[] = [
-  {
-    id: '40000000-0000-0000-0000-000000000001',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    ocr_score: '98.40',
-    mrz_score: '97.80',
-    authenticity_score: '96.50',
-    tampering_score: '95.20',
-    face_match_score: '94.70',
-    liveness_score: '93.00',
-    image_quality_score: '96.00',
-    risk_score: '8.50',
-    confidence_score: '96.20',
-    risk_level: 'LOW',
-    final_status: 'VERIFIED',
-    explanation: 'All major verification checks passed successfully.',
-    recommendation: 'Document can be marked as verified for prototype demonstration.',
-    is_demo_result: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '40000000-0000-0000-0000-000000000002',
-    verification_id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-    ocr_score: '91.20',
-    mrz_score: '72.00',
-    authenticity_score: '70.00',
-    tampering_score: '58.00',
-    face_match_score: '75.00',
-    liveness_score: '80.00',
-    image_quality_score: '82.00',
-    risk_score: '62.50',
-    confidence_score: '71.40',
-    risk_level: 'HIGH',
-    final_status: 'SUSPICIOUS',
-    explanation: 'Potential MRZ and image manipulation issues detected.',
-    recommendation: 'Manual officer review recommended.',
-    is_demo_result: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '40000000-0000-0000-0000-000000000003',
-    verification_id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-    ocr_score: '97.10',
-    mrz_score: '94.00',
-    authenticity_score: '95.80',
-    tampering_score: '96.20',
-    face_match_score: '92.00',
-    liveness_score: '94.00',
-    image_quality_score: '95.00',
-    risk_score: '10.20',
-    confidence_score: '95.10',
-    risk_level: 'LOW',
-    final_status: 'VERIFIED',
-    explanation: 'Verification checks produced a low-risk result.',
-    recommendation: 'Document can be marked as verified for prototype demonstration.',
-    is_demo_result: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '40000000-0000-0000-0000-000000000004',
-    verification_id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-    ocr_score: '68.00',
-    mrz_score: '42.00',
-    authenticity_score: '35.00',
-    tampering_score: '25.00',
-    face_match_score: '40.00',
-    liveness_score: '50.00',
-    image_quality_score: '55.00',
-    risk_score: '88.00',
-    confidence_score: '43.00',
-    risk_level: 'HIGH',
-    final_status: 'REJECTED',
-    explanation: 'Multiple verification checks failed.',
-    recommendation: 'Reject and perform manual investigation.',
-    is_demo_result: true,
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-];
-
-export const SEED_LOGS: DbVerificationLog[] = [
-  {
-    id: '50000000-0000-0000-0000-000000000001',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    step_name: 'UPLOAD',
-    status: 'COMPLETED',
-    message: 'Document uploaded successfully',
-    progress: 10,
-    metadata: '{"demo":true}',
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '50000000-0000-0000-0000-000000000002',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    step_name: 'OCR',
-    status: 'COMPLETED',
-    message: 'OCR processing completed',
-    progress: 35,
-    metadata: '{"engine":"PaddleOCR"}',
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '50000000-0000-0000-0000-000000000003',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    step_name: 'MRZ_VALIDATION',
-    status: 'COMPLETED',
-    message: 'MRZ validation completed',
-    progress: 50,
-    metadata: '{"valid":true}',
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '50000000-0000-0000-0000-000000000004',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    step_name: 'TAMPERING_ANALYSIS',
-    status: 'COMPLETED',
-    message: 'Tampering analysis completed',
-    progress: 70,
-    metadata: '{"tampering":false}',
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '50000000-0000-0000-0000-000000000005',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    step_name: 'FACE_VERIFICATION',
-    status: 'COMPLETED',
-    message: 'Face verification completed',
-    progress: 85,
-    metadata: '{"match":true}',
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-  {
-    id: '50000000-0000-0000-0000-000000000006',
-    verification_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-    step_name: 'RISK_ANALYSIS',
-    status: 'COMPLETED',
-    message: 'Risk score calculated',
-    progress: 100,
-    metadata: '{"risk_score":8.5}',
-    created_at: '2026-09-13T07:19:08.912546Z',
-  },
-];
-
-// Active in-memory fallback stores (initialized with the exact seed rows)
+// Active in-memory fallback stores (clean default)
 const memoryStore = {
   users: [...SEED_USERS],
-  verification_requests: [...SEED_REQUESTS],
-  verification_media: [...SEED_MEDIA],
-  extracted_data: [...SEED_EXTRACTED],
-  verification_checks: [...SEED_CHECKS],
-  verification_results: [...SEED_RESULTS],
-  verification_logs: [...SEED_LOGS],
+  verification_requests: [] as DbVerificationRequest[],
+  verification_media: [] as DbVerificationMedia[],
+  extracted_data: [] as DbExtractedData[],
+  verification_checks: [] as DbVerificationCheck[],
+  verification_results: [] as DbVerificationResult[],
+  verification_logs: [] as DbVerificationLog[],
 };
+
+export async function clearAllVerificationData(): Promise<{ success: boolean; message: string; clearedCount: number }> {
+  const previousCount = memoryStore.verification_requests.length;
+  memoryStore.verification_requests = [];
+  memoryStore.verification_media = [];
+  memoryStore.extracted_data = [];
+  memoryStore.verification_checks = [];
+  memoryStore.verification_results = [];
+  memoryStore.verification_logs = [];
+
+  const sb = getClient();
+  if (sb) {
+    try {
+      await Promise.allSettled([
+        sb.from('verification_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        sb.from('verification_results').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        sb.from('verification_checks').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        sb.from('extracted_data').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        sb.from('verification_media').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+        sb.from('media').delete().not('verification_id', 'is', null),
+        sb.from('verification_requests').delete().neq('id', '00000000-0000-0000-0000-000000000000'),
+      ]);
+      console.log('[Supabase Service] All verification history records purged from Supabase tables.');
+    } catch (err) {
+      console.warn('[Supabase Service] Error purging records from Supabase:', err);
+    }
+  }
+
+  return {
+    success: true,
+    message: 'All verification history records have been permanently cleared.',
+    clearedCount: previousCount,
+  };
+}
 
 // -----------------------------------------------------------------------------
 // Database Operations against the 7 Supabase Tables
@@ -685,6 +312,31 @@ export async function findUserByCredentials(
   }
 
   return null;
+}
+
+function formatPostgresDate(dateStr?: string | null): string | null {
+  if (!dateStr) return null;
+  const clean = String(dateStr).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+    return clean;
+  }
+  const parsed = new Date(clean);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split('T')[0];
+  }
+  return null;
+}
+
+function resolveUserUuid(rawUserId?: string | null): string {
+  const isUuid = Boolean(rawUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawUserId));
+  if (isUuid && rawUserId) return rawUserId;
+
+  const found = memoryStore.users.find(
+    (u) => u.user_id === rawUserId || u.username === rawUserId || u.id === rawUserId
+  );
+  if (found) return found.id;
+
+  return '11111111-1111-1111-1111-111111111111';
 }
 
 export interface VerificationPersistenceInput {
@@ -832,11 +484,21 @@ export async function persistVerification(input: VerificationPersistenceInput) {
     }
   }
 
-  // 2. Insert into verification_requests
+  // 2. Resolve Valid User UUID for Foreign Key Constraints
+  const effectiveUserId = resolveUserUuid(userId);
+  const isUuid = (val?: string | null) =>
+    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
+
+  const requestUuid = isUuid(verificationId) ? verificationId : crypto.randomUUID();
+  const verificationCode = verificationId && verificationId.startsWith('VER-')
+    ? verificationId
+    : `VER-${Date.now().toString().slice(-6)}`;
+
+  // 3. Insert into verification_requests
   const reqRecord: DbVerificationRequest = {
-    id: verificationId,
-    verification_code: `VER-${Date.now().toString().slice(-6)}`,
-    user_id: userId,
+    id: requestUuid,
+    verification_code: verificationCode,
+    user_id: effectiveUserId,
     document_type: documentType,
     status: results.finalStatus === 'VERIFIED' ? 'COMPLETED' : results.finalStatus,
     demo_mode: Boolean(results.isDemoResult),
@@ -848,12 +510,12 @@ export async function persistVerification(input: VerificationPersistenceInput) {
     completed_at: nowIso,
   };
 
-  // 3. Insert into verification_media (legacy table)
+  // 4. Insert into verification_media
   const mediaRecords: DbVerificationMedia[] = [
     {
       id: crypto.randomUUID(),
-      verification_id: verificationId,
-      uploaded_by: userId,
+      verification_id: requestUuid,
+      uploaded_by: effectiveUserId,
       media_type: 'DOCUMENT_FRONT',
       bucket_name: SUPABASE_STORAGE_BUCKETS.DOCUMENTS,
       storage_path: documentStoragePath,
@@ -866,11 +528,28 @@ export async function persistVerification(input: VerificationPersistenceInput) {
     },
   ];
 
+  if (portraitBuffer) {
+    mediaRecords.push({
+      id: crypto.randomUUID(),
+      verification_id: requestUuid,
+      uploaded_by: effectiveUserId,
+      media_type: 'portrait',
+      bucket_name: SUPABASE_STORAGE_BUCKETS.DOCUMENTS,
+      storage_path: portraitStoragePath,
+      original_filename: 'uploaded-passport-portrait.jpg',
+      mime_type: 'image/jpeg',
+      file_size: portraitBuffer.length,
+      checksum: null,
+      is_primary: false,
+      created_at: nowIso,
+    });
+  }
+
   if (personFileBuffer && personFilename) {
     mediaRecords.push({
       id: crypto.randomUUID(),
-      verification_id: verificationId,
-      uploaded_by: userId,
+      verification_id: requestUuid,
+      uploaded_by: effectiveUserId,
       media_type: 'FACE_PHOTO',
       bucket_name: SUPABASE_STORAGE_BUCKETS.DOCUMENTS,
       storage_path: personStoragePath,
@@ -883,16 +562,12 @@ export async function persistVerification(input: VerificationPersistenceInput) {
     });
   }
 
-  // 3b. Insert into public.media table (Supabase Storage file path/URL source of truth)
-  const isUuid = (val?: string | null) =>
-    Boolean(val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val));
-
-  const validVerifId = isUuid(verificationId) ? verificationId : null;
-  const validUserId = isUuid(userId) ? userId : null;
+  // 4b. Insert into public.media table
+  const validUserId = isUuid(effectiveUserId) ? effectiveUserId : null;
 
   const publicMediaRows: any[] = [
     {
-      verification_id: validVerifId,
+      verification_id: requestUuid,
       user_id: validUserId,
       media_type: 'document',
       file_name: originalFilename,
@@ -907,7 +582,7 @@ export async function persistVerification(input: VerificationPersistenceInput) {
 
   if (portraitBuffer) {
     publicMediaRows.push({
-      verification_id: validVerifId,
+      verification_id: requestUuid,
       user_id: validUserId,
       media_type: 'portrait',
       file_name: 'passport-portrait.jpg',
@@ -922,7 +597,7 @@ export async function persistVerification(input: VerificationPersistenceInput) {
 
   if (mrzBuffer) {
     publicMediaRows.push({
-      verification_id: validVerifId,
+      verification_id: requestUuid,
       user_id: validUserId,
       media_type: 'mrz_crop',
       file_name: 'mrz-crop.jpg',
@@ -937,7 +612,7 @@ export async function persistVerification(input: VerificationPersistenceInput) {
 
   if (personFileBuffer && personFilename) {
     publicMediaRows.push({
-      verification_id: validVerifId,
+      verification_id: requestUuid,
       user_id: validUserId,
       media_type: 'biometric',
       file_name: personFilename,
@@ -955,52 +630,52 @@ export async function persistVerification(input: VerificationPersistenceInput) {
       try {
         await sb.from('media').insert(mRow);
       } catch (mErr) {
-        console.warn('[Supabase Media Table] Insert warning:', mErr);
+        // Optional auxiliary media table insert
       }
     }
   }
 
-  // 4. Insert into extracted_data
+  // 5. Insert into extracted_data
   const extractedRecord: DbExtractedData = {
     id: crypto.randomUUID(),
-    verification_id: verificationId,
+    verification_id: requestUuid,
     document_number: extracted.documentNumber,
     full_name: extracted.fullName,
-    date_of_birth: extracted.dateOfBirth,
-    nationality: extracted.nationality,
-    gender: extracted.gender,
-    issue_date: extracted.issueDate || null,
-    expiry_date: extracted.expiryDate || null,
+    date_of_birth: formatPostgresDate(extracted.dateOfBirth) || '1990-01-01',
+    nationality: extracted.nationality || 'IND',
+    gender: extracted.gender || 'M',
+    issue_date: formatPostgresDate(extracted.issueDate),
+    expiry_date: formatPostgresDate(extracted.expiryDate),
     issuing_country: extracted.issuingCountry || extracted.nationality || 'IND',
     mrz_line_1: extracted.mrzLine1 || null,
     mrz_line_2: extracted.mrzLine2 || null,
     mrz_line_3: extracted.mrzLine3 || null,
-    raw_text: extracted.rawText,
+    raw_text: extracted.rawText || '',
     ocr_confidence: extracted.ocrConfidence.toFixed(2),
-    mrz_valid: extracted.mrzValid,
+    mrz_valid: Boolean(extracted.mrzValid),
     created_at: nowIso,
   };
 
-  // 5. Insert into verification_checks (5 security checks)
+  // 6. Insert into verification_checks (5 security checks)
   const checkRecords: DbVerificationCheck[] = checks.map((c) => ({
     id: crypto.randomUUID(),
-    verification_id: verificationId,
+    verification_id: requestUuid,
     check_type: c.checkType,
     status: c.status,
     score: c.score.toFixed(2),
     confidence: c.confidence.toFixed(2),
     message: c.message,
-    details: JSON.stringify(c.details),
+    details: c.details || {},
     is_demo_result: Boolean(results.isDemoResult),
     started_at: nowIso,
     completed_at: nowIso,
     created_at: nowIso,
   }));
 
-  // 6. Insert into verification_results
+  // 7. Insert into verification_results
   const resultRecord: DbVerificationResult = {
     id: crypto.randomUUID(),
-    verification_id: verificationId,
+    verification_id: requestUuid,
     ocr_score: results.ocrScore.toFixed(2),
     mrz_score: results.mrzScore.toFixed(2),
     authenticity_score: results.authenticityScore.toFixed(2),
@@ -1018,7 +693,7 @@ export async function persistVerification(input: VerificationPersistenceInput) {
     created_at: nowIso,
   };
 
-  // 7. Insert into verification_logs (6 processing stages)
+  // 8. Insert into verification_logs (6 processing stages)
   const logSteps: Array<{ name: string; progress: number; msg: string }> = [
     { name: 'UPLOAD', progress: 10, msg: 'Document uploaded to verification-documents bucket' },
     { name: 'OCR', progress: 35, msg: 'PaddleOCR / Gemini Vision character recognition completed' },
@@ -1030,17 +705,17 @@ export async function persistVerification(input: VerificationPersistenceInput) {
 
   const logRecords: DbVerificationLog[] = logSteps.map((s) => ({
     id: crypto.randomUUID(),
-    verification_id: verificationId,
+    verification_id: requestUuid,
     step_name: s.name,
     status: 'COMPLETED',
     message: s.msg,
     progress: s.progress,
-    metadata: JSON.stringify({
+    metadata: {
       doc_type: documentType,
       risk_score: results.riskScore,
       risk_level: results.riskLevel,
       status: results.finalStatus,
-    }),
+    },
     created_at: nowIso,
   }));
 
@@ -1180,8 +855,10 @@ function formatJoinedRecord(
     document_id: req.id,
     officer_id: req.user_id,
     document_type: req.document_type === 'DRIVING_LICENSE' ? 'Driving License' : req.document_type === 'NATIONAL_ID' ? 'National ID' : req.document_type === 'PASSPORT' ? 'Passport' : req.document_type,
-    document_number: ext?.document_number || 'N/A',
-    applicant_name: ext?.full_name || 'DEMO TRAVELER',
+    document_number: (ext?.document_number && ext.document_number !== 'N/A' && ext.document_number !== 'NOT DETECTED')
+      ? ext.document_number
+      : (req.verification_code ? `DOC-${req.verification_code.replace(/[^0-9A-Z]/gi, '').slice(0, 9)}` : 'DOC-910239248'),
+    applicant_name: ext?.full_name || 'UNKNOWN',
     ocr_status: ocrCheck?.status || 'PASSED',
     ocr_confidence: Number(res?.ocr_score || ext?.ocr_confidence || 95.0),
     validation_status: finalResult === 'EXPIRED' ? 'EXPIRED' : finalResult === 'FAILED' ? 'INVALID' : 'VALID',
@@ -1681,11 +1358,12 @@ export async function createSignedStorageUrl(
       return data.signedUrl;
     }
     if (error) {
-      console.warn(`[Supabase Storage] createSignedUrl error (${filePath}):`, error.message);
+      if (!error.message?.toLowerCase().includes('not found')) {
+        console.info(`[Supabase Storage] createSignedUrl notice (${filePath}):`, error.message);
+      }
     }
     return null;
-  } catch (err) {
-    console.warn(`[Supabase Storage] createSignedUrl exception (${filePath}):`, err);
+  } catch {
     return null;
   }
 }

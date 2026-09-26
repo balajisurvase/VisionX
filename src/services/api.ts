@@ -159,6 +159,14 @@ export async function getHistory(): Promise<VerificationRecord[]> {
   return (rawList || []).map(mapApiRecordToFrontend);
 }
 
+export async function clearHistory(): Promise<{ success: boolean; message: string; cleared?: number }> {
+  return fetchJson<{ success: boolean; message: string; cleared?: number }>(
+    API_ENDPOINTS.verification.history,
+    { method: 'DELETE' },
+    'clear history'
+  );
+}
+
 export async function getHistoryDetail(verificationId: string): Promise<VerificationRecord> {
   const raw = await fetchJson<any>(API_ENDPOINTS.verification.detail(verificationId), undefined, 'history record detail');
   return mapApiRecordToFrontend(raw);
@@ -351,66 +359,23 @@ export async function executeClientSideScreening(
     }
   }
 
-  // Check against known test specimens & patterns
-  let docNum = '910239248';
-  let fullName = 'MICHELLE DELAPAZ';
-  let nationality = 'USA';
-  let dob = '1999-08-07';
-  let expiry = '2030-02-05';
-  let gender = 'F';
-  let mrz1 = 'P<USADELAPAZ<<MICHELLE<<<<<<<<<<<<<<<<<<<<<<';
-  let mrz2 = '9102392482USA9908071F3002051900781200<129676';
+  // Initialize default document variables (NO hardcoded fallback identity values)
+  let docNum = 'NOT DETECTED';
+  let fullName = 'NOT DETECTED';
+  let nationality = 'NOT DETECTED';
+  let dob = '';
+  let expiry = '';
+  let gender = '';
+  let mrz1 = '';
+  let mrz2 = '';
   let tamperingDetected = false;
   let tamperingScore = 0;
   let tamperingNotes: string[] = [];
 
-  if (
-    fileName.includes('michelle') ||
-    fileName.includes('delapaz') ||
-    fileName.includes('910239248')
-  ) {
-    docNum = '910239248';
-    fullName = 'MICHELLE DELAPAZ';
-    nationality = 'USA';
-    dob = '1999-08-07';
-    expiry = '2030-02-05';
-    gender = 'F';
-    mrz1 = 'P<USADELAPAZ<<MICHELLE<<<<<<<<<<<<<<<<<<<<<<';
-    mrz2 = '9102392482USA9908071F3002051900781200<129676';
-    tamperingDetected = false;
-    tamperingScore = 0;
-    tamperingNotes = [];
-  } else if (fileName.includes('david') || fileName.includes('chen') || fileName.includes('e78901234')) {
-    docNum = 'E78901234';
-    fullName = 'DAVID CHEN';
-    nationality = 'GBR';
-    dob = '1985-05-12';
-    expiry = '2029-08-20';
-    gender = 'M';
-    mrz1 = 'P<GBRCHEN<<DAVID<<<<<<<<<<<<<<<<<<<<<<<<<<<<<';
-    mrz2 = 'E789012343GBR8505126M2908204<<<<<<<<<<<<<<02';
-  } else if (fileName.includes('sarah') || fileName.includes('jenkins') || fileName.includes('dl-98765432')) {
-    docNum = 'DL-98765432-A';
-    fullName = 'SARAH JENKINS';
-    nationality = 'USA';
-    dob = '1992-11-23';
-    expiry = '2028-10-15';
-    gender = 'F';
-    documentType = 'Driving License';
-  } else if (fileName.includes('elena') || fileName.includes('rostova') || fileName.includes('id-ru-882190')) {
-    docNum = 'ID-RU-882190';
-    fullName = 'ELENA ROSTOVA';
-    nationality = 'RUS';
-    dob = '1990-03-14';
-    expiry = '2025-06-30';
-    gender = 'F';
-    documentType = 'National ID';
-  } else {
-    // Check filename for standard ID pattern
-    const match = fileName.match(/\b([a-z]{1,2}[0-9]{6,9}|[0-9]{9})\b/i);
-    if (match) {
-      docNum = match[1].toUpperCase();
-    }
+  // Check filename for standard ID pattern
+  const match = fileName.match(/\b([a-z]{1,2}[0-9]{6,9}|[0-9]{9})\b/i);
+  if (match) {
+    docNum = match[1].toUpperCase();
   }
 
   // Parse MRZ if TD3

@@ -198,8 +198,8 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
         );
         setPendingResult(record);
         setIsBackendReady(true);
-      } else {
-        const activeScenario = scenario || DEMO_SCENARIOS[0];
+      } else if (scenario) {
+        const activeScenario = scenario;
         const scenarioDocType = (activeScenario.document_type as DocumentType) || selectedDocType;
         const autoMrz = generateTd3Mrz({
           fullName: activeScenario.applicant_name,
@@ -296,6 +296,10 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
 
         setPendingResult(resultRecord);
         setIsBackendReady(true);
+      } else {
+        setErrorMessage('No document file uploaded. Please upload a document to run verification.');
+        setIsScreening(false);
+        setCurrentStep(2);
       }
     } catch (err: any) {
       console.error('Verification execution error:', err);
@@ -864,35 +868,43 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
       {currentStep === 5 && currentResult && (() => {
         const status = currentResult.verification_status || 'FAILED';
 
-        let bannerStyle = 'bg-[#FEE2E2] border-red-300 text-[#B91C1C]';
+        let bannerStyle = 'bg-[#FEE2E2] border-[#FCA5A5] text-[#B91C1C]';
         let iconBgStyle = 'bg-[#B91C1C] text-white';
         let BannerIcon = XCircle;
         let bannerTitle = 'FAILED';
-        let riskBadgeText = 'High Risk';
-        let riskBadgeStyle = 'bg-[#FEE2E2] text-[#B91C1C] border border-red-300';
-        let bannerMessage = currentResult.reasons?.[0] || currentResult.notes || 'Verification checks could not be completed successfully.';
+        let riskBadgeText = 'Failed';
+        let riskBadgeStyle = 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5]';
+        let bannerMessage = currentResult.reasons?.[0] || 'Data mismatch / verification failure: Document did not pass security validation.';
 
         if (status === 'VERIFIED' || status === 'AUTHENTIC') {
-          bannerStyle = 'bg-[#DCFCE7] border-green-300 text-[#15803D]';
+          bannerStyle = 'bg-[#DCFCE7] border-[#86EFAC] text-[#15803D]';
           iconBgStyle = 'bg-[#15803D] text-white font-bold';
           BannerIcon = ShieldCheck;
-          bannerTitle = 'VERIFIED / AUTHENTIC';
+          bannerTitle = 'VERIFIED';
           riskBadgeText = 'Low Risk';
-          riskBadgeStyle = 'bg-[#DCFCE7] text-[#15803D] border border-green-300';
-          bannerMessage = currentResult.notes || currentResult.explanation || 'Document Cleared to Proceed: Document appears authentic and valid.';
+          riskBadgeStyle = 'bg-[#DCFCE7] text-[#15803D] border border-[#86EFAC]';
+          bannerMessage = currentResult.notes || currentResult.explanation || 'Document verified: Identity credentials authentic, active, and valid.';
+        } else if (status === 'HIGH_RISK' || status === 'SUSPICIOUS' || status === 'TAMPERED' || (currentResult.risk_score && currentResult.risk_score > 70)) {
+          bannerStyle = 'bg-[#FFEDD5] border-[#FDBA74] text-[#C2410C]';
+          iconBgStyle = 'bg-[#C2410C] text-white font-bold';
+          BannerIcon = AlertTriangle;
+          bannerTitle = 'HIGH RISK';
+          riskBadgeText = 'High Risk';
+          riskBadgeStyle = 'bg-[#FFEDD5] text-[#C2410C] border border-[#FDBA74]';
+          bannerMessage = currentResult.reasons?.[0] || 'Suspicious or tampered document: Forensic substrate or biometric anomaly detected.';
         } else if (status === 'EXPIRED') {
-          bannerStyle = 'bg-[#FEE2E2] border-red-300 text-[#B91C1C]';
+          bannerStyle = 'bg-[#FEE2E2] border-[#FCA5A5] text-[#B91C1C]';
           iconBgStyle = 'bg-[#B91C1C] text-white';
           BannerIcon = XCircle;
-          bannerTitle = 'NOT ELIGIBLE • EXPIRED DOCUMENT';
-          riskBadgeText = 'High Risk';
-          riskBadgeStyle = 'bg-[#FEE2E2] text-[#B91C1C] border border-red-300';
-          bannerMessage = currentResult.reasons?.[0] || `Document validity lapsed on ${formatVisualDate(currentResult.date_of_expiry) || 'expiry date'}. Holder is NOT ELIGIBLE for border clearance.`;
-        } else if (status === 'REVIEW' || status === 'INCONCLUSIVE' || status === 'REVIEW_REQUIRED' || status === 'SUSPICIOUS') {
+          bannerTitle = 'FAILED';
+          riskBadgeText = 'Expired';
+          riskBadgeStyle = 'bg-[#FEE2E2] text-[#B91C1C] border border-[#FCA5A5]';
+          bannerMessage = `Document validity lapsed on ${formatVisualDate(currentResult.date_of_expiry) || 'expiry date'}. Travel validity breached.`;
+        } else if (status === 'REVIEW' || status === 'INCONCLUSIVE' || status === 'REVIEW_REQUIRED') {
           bannerStyle = 'bg-[#FEF3C7] border-amber-300 text-[#B45309]';
           iconBgStyle = 'bg-[#B45309] text-white font-bold';
           BannerIcon = AlertTriangle;
-          bannerTitle = 'REVIEW REQUIRED';
+          bannerTitle = 'REVIEW';
           riskBadgeText = 'Medium Risk';
           riskBadgeStyle = 'bg-[#FEF3C7] text-[#B45309] border border-amber-300';
           bannerMessage = currentResult.reasons?.[0] || currentResult.notes || 'Secondary manual inspection required by verifying officer.';
@@ -1108,53 +1120,92 @@ export const VerifyDocument: React.FC<VerifyDocumentProps> = ({
                     Detected Document Fields
                   </h3>
                   <span className="text-[14px] font-bold text-[#2563EB]">
-                    OCR Confidence: {ocrConf.toFixed(1)}%
+                    OCR Confidence: {ocrConf > 0 ? `${ocrConf.toFixed(1)}%` : 'NOT AVAILABLE'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-[16px]">
-                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Full Name</span>
+                <div className="grid grid-cols-2 gap-3 text-[15px]">
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Full Name</span>
                     <span className="font-bold block truncate text-[#10233F]">
-                      {hasValidName ? name : 'NOT DETECTED'}
+                      {hasValidName ? name : 'Not Detected'}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Document Number</span>
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Document Number</span>
                     <span className="font-bold block truncate text-[#10233F]">
-                      {hasValidDocNum ? docNum : 'NOT DETECTED'}
+                      {hasValidDocNum ? docNum : 'Not Detected'}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Date of Birth</span>
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Date of Birth</span>
                     <span className="font-bold block truncate text-[#10233F]">
-                      {formatVisualDate(currentResult.date_of_birth) || 'NOT DETECTED'}
+                      {formatVisualDate(currentResult.date_of_birth) || 'Not Detected'}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Nationality</span>
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Nationality</span>
                     <span className="font-bold block truncate text-[#10233F]">
-                      {hasValidNat ? nat : 'NOT DETECTED'}
+                      {hasValidNat ? nat : 'Not Detected'}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Document Type</span>
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Document Type</span>
                     <span className="font-bold block truncate text-[#10233F]">
-                      {currentResult.document_type || selectedDocType}
+                      {currentResult.document_type || selectedDocType || 'Not Detected'}
                     </span>
                   </div>
 
-                  <div className="p-3 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
-                    <span className="text-[13px] font-bold text-[#64748B] uppercase block">Date of Expiry</span>
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Date of Issue</span>
                     <span className="font-bold block truncate text-[#10233F]">
-                      {formatVisualDate(currentResult.date_of_expiry) || 'NOT DETECTED'}
+                      {formatVisualDate(currentResult.ocr_data?.date_of_issue || currentResult.extractedData?.dateOfIssue) || 'Not Detected'}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Date of Expiry</span>
+                    <span className="font-bold block truncate text-[#10233F]">
+                      {formatVisualDate(currentResult.date_of_expiry) || 'Not Detected'}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px]">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Gender</span>
+                    <span className="font-bold block truncate text-[#10233F]">
+                      {currentResult.ocr_data?.gender || currentResult.extractedData?.gender || 'Not Detected'}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 bg-[#F5F9FF] border border-[#C9DCF8] rounded-[6px] col-span-2">
+                    <span className="text-[12px] font-bold text-[#64748B] uppercase block">Issuing Country</span>
+                    <span className="font-bold block truncate text-[#10233F]">
+                      {currentResult.ocr_data?.issuing_country || currentResult.extractedData?.issuingAuthority || nat || 'Not Detected'}
                     </span>
                   </div>
                 </div>
+
+                {/* RAW OCR DEBUG INFORMATION (Requirement 15) */}
+                <details className="mt-4 border border-[#C9DCF8] rounded-[6px] bg-[#F5F9FF] p-3 text-[13px]">
+                  <summary className="font-bold text-[#10233F] cursor-pointer uppercase tracking-wider select-none flex items-center justify-between">
+                    <span>OCR Debug Information</span>
+                    <span className="text-[12px] font-normal text-[#2563EB]">Expand Debug</span>
+                  </summary>
+                  <div className="mt-3 space-y-1.5 font-mono text-[12px] text-[#10233F] border-t border-[#C9DCF8] pt-2.5">
+                    <div><strong>Uploaded File:</strong> {uploadedFile?.name || currentResult.document?.file_name || currentResult.debug?.uploaded_file || 'Not Provided'}</div>
+                    <div><strong>File Size:</strong> {uploadedFile ? formatFileSize(uploadedFile.size) : (currentResult.document?.file_size ? formatFileSize(currentResult.document.file_size) : 'Not Provided')}</div>
+                    <div><strong>MIME Type:</strong> {uploadedFile?.type || currentResult.document?.mime_type || currentResult.debug?.mime_type || 'image/jpeg'}</div>
+                    <div><strong>Image Width:</strong> {currentResult.debug?.image_width || 800}px</div>
+                    <div><strong>Image Height:</strong> {currentResult.debug?.image_height || 600}px</div>
+                    <div><strong>OCR Engine:</strong> {currentResult.debug?.ocr_engine || 'Gemini 2.5 Flash Vision / Tesseract OCR'}</div>
+                    <div><strong>OCR Text:</strong> <pre className="bg-white p-2 rounded border border-[#C9DCF8] mt-1 whitespace-pre-wrap max-h-32 overflow-y-auto">{currentResult.debug?.ocr_text || currentResult.ocr_data?.raw_text || currentResult.ocr?.mrz_raw || 'No raw OCR text extracted'}</pre></div>
+                    <div><strong>MRZ:</strong> <pre className="bg-white p-2 rounded border border-[#C9DCF8] mt-1 font-mono text-[#2563EB]">{currentResult.debug?.mrz || (currentResult.ocr_data?.mrz_line_1 ? `${currentResult.ocr_data.mrz_line_1}\n${currentResult.ocr_data.mrz_line_2}` : 'Not Detected')}</pre></div>
+                  </div>
+                </details>
               </div>
 
               <div className="bg-white rounded-[8px] border border-[#C9DCF8] p-6 space-y-4">

@@ -5,7 +5,7 @@
  * - ICAO Doc 9303 Machine Readable Travel Documents (MRTD) Checksums
  * - ISO/IEC 19794-5 Biometric Data Interchange Formats (Face Image Data)
  * - NIST Special Publication 800-76 (Biometric Specifications for Identity Verification)
- * - OpenCV Error Level Analysis (ELA) Substrate Anomaly Quantization
+ * - Error Level Analysis (ELA) Substrate Anomaly Quantization
  * - Real-Time Temporal Validity & Expiry Timeline Comparison
  */
 
@@ -255,7 +255,7 @@ export function calculateThreatRiskScore(input: ThreatRiskPillars): ThreatRiskEv
         explanation: mrzExplanation,
       },
       forensics: {
-        pillarName: 'OpenCV Substrate & ELA Forensics',
+        pillarName: 'Forensic Substrate & ELA Analysis',
         weightMax: 35,
         riskPoints: forensicRisk,
         status: forensicStatus,
